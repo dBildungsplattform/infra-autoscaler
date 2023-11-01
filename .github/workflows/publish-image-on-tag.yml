@@ -1,0 +1,24 @@
+name: 'Publish image to GHCR on tag'
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+concurrency:
+  group: scaler-main
+  cancel-in-progress: true
+
+jobs:
+  build_and_push:
+    permissions:
+      packages: write
+      security-events: write
+      contents: read
+    uses: dBildungsplattform/dbp-github-workflows/.github/workflows/image-publish-trivy.yaml@2.0.0
+    with:
+      image_name: "scaler"
+      run_trivy_scan: false
+      tag_generation: "version_git_tag"
+      add_latest_tag: true
+      container_registry: "ghcr.io"
