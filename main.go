@@ -1,11 +1,16 @@
 package main
 
 import (
-	"scaler/BBB"
-	"scaler/scaler"
+	"scaler/common"
+	"scaler/core"
 )
 
 func main() {
-	var bbb scaler.Service = &BBB.BBBService{}
-	bbb.Init()
+	ServiceDefinitions := []common.ServiceDefinition{
+		{Name: "bbb1", Type: common.BBB},
+		{Name: "bbb2", Type: common.BBB},
+		{Name: "postgres1", Type: common.Postgres},
+	}
+	app := core.Load_app(&ServiceDefinitions)
+	app.Scale()
 }
