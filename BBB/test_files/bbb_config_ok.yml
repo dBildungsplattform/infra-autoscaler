@@ -1,0 +1,24 @@
+instances_source:
+  ionos:
+    datacenter_ids: [UUID]
+    server_name_regex: ".*"
+    # server_labels: [label]
+  # inline_ionos:
+  #   - datacenter_id: UUID
+  #     server_id: UUID
+#   cloud_provider:
+#     ionos:
+#       username: username
+#       password: pw123
+resources:
+  cpu:
+    min_cores: 4
+    max_cores: 16
+    max_usage: 0.7
+  memory:
+    min_bytes: 12288
+    max_bytes: 32768
+    max_usage: 0.7
+cycle_time_seconds: 60
+bbb:
+  api_token: $BBB_API_TOKEN
