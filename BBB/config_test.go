@@ -1,7 +1,9 @@
 package BBB
 
 import (
+	"scaler/ionos"
 	"scaler/scaler/config"
+	v "scaler/validater"
 	"testing"
 )
 
@@ -25,19 +27,25 @@ func TestValidateConfigOK(t *testing.T) {
 		}{
 			ApiToken: "1234567890",
 		},
-		InstancesSource: InstanceSources{
-			Ionos: &config.IonosServerInstancesSource{
-				DatacenterIds:   []string{"1234567890"},
-				ServerNameRegex: ".*",
+		CloudProvider: config.CloudProvider{
+			Ionos: &ionos.CloudProvider{
+				Username: "username",
+				Password: "password",
+				InstancesSource: &ionos.ServerSource{
+					Dynamic: &ionos.ServerDynamicSource{
+						DatacenterIds:   []string{"1234567890"},
+						ServerNameRegex: ".*",
+					},
+				},
 			},
 		},
 	}
-	config.ValidatePass(t, bbbConfig)
+	v.ValidatePass(t, bbbConfig)
 }
 
 func TestValidateConfigNotOK(t *testing.T) {
 	bbbConfig := &Config{}
-	config.ValidateFail(t, bbbConfig)
+	v.ValidateFail(t, bbbConfig)
 }
 
 func TestParseConfigOK(t *testing.T) {
@@ -45,7 +53,7 @@ func TestParseConfigOK(t *testing.T) {
 	if ok != nil {
 		t.Fatalf("Failed to parse config: %v", ok)
 	}
-	config.ValidatePass(t, c)
+	v.ValidatePass(t, c)
 }
 
 func TestParseConfigNotOK(t *testing.T) {

@@ -2,35 +2,17 @@ package config
 
 import (
 	"os"
-	"testing"
+	v "scaler/validater"
 
 	"gopkg.in/yaml.v3"
 )
-
-type Validater interface {
-	Validate() error
-}
-
-func ValidatePass(t *testing.T, v Validater) {
-	err := v.Validate()
-	if err != nil {
-		t.Error(err)
-	}
-}
-
-func ValidateFail(t *testing.T, v Validater) {
-	err := v.Validate()
-	if err == nil {
-		t.Error("expected error")
-	}
-}
 
 // Can't be in this package because of circular dependencies
 // type Config struct {
 // 	BBB *BBBConfig
 // }
 
-func LoadConfig[V Validater](path string) (*V, error) {
+func LoadConfig[V v.Validater](path string) (*V, error) {
 	r, ok := os.ReadFile(path)
 	if ok != nil {
 		return nil, ok
@@ -42,7 +24,7 @@ func LoadConfig[V Validater](path string) (*V, error) {
 	return config, nil
 }
 
-func ParseConfig[V Validater](data []byte) (*V, error) {
+func ParseConfig[V v.Validater](data []byte) (*V, error) {
 	var config V
 	err := yaml.Unmarshal(data, &config)
 	if err != nil {

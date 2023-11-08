@@ -10,18 +10,13 @@ type Resources struct {
 	Memory *config.MemoryResources
 }
 
-type InstanceSources struct {
-	Ionos       *config.IonosServerInstancesSource       `yaml:"ionos"`
-	InlineIonos *config.InlineIonosServerInstancesSource `yaml:"inline_ionos"`
-}
-
 type Config struct {
 	CycleTimeSeconds int `yaml:"cycle_time_seconds"`
 	Resources        Resources
 	BBB              struct {
 		ApiToken string `yaml:"api_token"`
 	}
-	InstancesSource InstanceSources `yaml:"instances_source"`
+	CloudProvider config.CloudProvider `yaml:"cloud_provider"`
 }
 
 func (r Resources) Validate() error {
@@ -41,29 +36,6 @@ func (r Resources) Validate() error {
 	return nil
 }
 
-func (is InstanceSources) Validate() error {
-	ionos, inline := is.Ionos, is.InlineIonos
-	if ionos == nil && inline == nil {
-		return fmt.Errorf("instances_source.ionos and instances_source.inline_ionos are nil, one must be set")
-	}
-	if ionos != nil && inline != nil {
-		return fmt.Errorf("instances_source.ionos and instances_source.inline_ionos are both set, only one must be set")
-	}
-	if ionos != nil {
-		err := ionos.Validate()
-		if err != nil {
-			return err
-		}
-	}
-	if inline != nil {
-		err := inline.Validate()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (config Config) Validate() error {
 	if err := config.Resources.Validate(); err != nil {
 		return err
@@ -71,7 +43,7 @@ func (config Config) Validate() error {
 	if config.BBB.ApiToken == "" {
 		return fmt.Errorf("bbb.api_token is empty")
 	}
-	if err := config.InstancesSource.Validate(); err != nil {
+	if err := config.CloudProvider.Validate(); err != nil {
 		return err
 	}
 	return nil
