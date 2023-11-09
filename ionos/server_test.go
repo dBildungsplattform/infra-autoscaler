@@ -66,8 +66,6 @@ func TestValidateServerStaticSourceEmptyServerId(t *testing.T) {
 
 func TestValidateServerSourceOK(t *testing.T) {
 	serverSource := &ServerSource{
-		Username: "user",
-		Password: "pass",
 		Dynamic: &ServerDynamicSource{
 			DatacenterIds:   []string{"123"},
 			ServerNameRegex: ".*",

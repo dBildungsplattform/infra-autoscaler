@@ -1,6 +1,9 @@
 package config
 
-import "scaler/ionos"
+import (
+	"fmt"
+	"scaler/ionos"
+)
 
 type CloudProvider struct {
 	Ionos *ionos.CloudProvider
@@ -8,7 +11,10 @@ type CloudProvider struct {
 
 func (s CloudProvider) Validate() error {
 	if s.Ionos != nil {
-		return s.Ionos.Validate()
+		if err := s.Ionos.Validate(); err != nil {
+			return err
+		}
+		return nil
 	}
-	return nil
+	return fmt.Errorf("cloud_provider is empty")
 }
