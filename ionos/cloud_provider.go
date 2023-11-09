@@ -3,9 +3,10 @@ package ionos
 import "fmt"
 
 type CloudProvider struct {
-	Username        string
-	Password        string
-	InstancesSource *ServerSource `yaml:"instances_source"`
+	Username     string
+	Password     string
+	ServerSource *ServerSource `yaml:"server_source"`
+	// PostgresSource *PostgresSource `yaml:"postgres_source"`
 }
 
 func (c CloudProvider) Validate() error {
@@ -15,10 +16,11 @@ func (c CloudProvider) Validate() error {
 	if c.Password == "" {
 		return fmt.Errorf("password is empty")
 	}
-	if c.InstancesSource == nil {
+	ss := c.ServerSource
+	if ss == nil {
 		return fmt.Errorf("instances_source is nil")
 	}
-	if err := c.InstancesSource.Validate(); err != nil {
+	if err := ss.Validate(); err != nil {
 		return err
 	}
 	return nil

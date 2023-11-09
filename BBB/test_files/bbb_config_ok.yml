@@ -2,7 +2,7 @@ cloud_provider:
   ionos:
     username: username
     password: pw123
-    instances_source:
+    server_source:
       dynamic:
         datacenter_ids: [UUID]
         server_name_regex: ".*"

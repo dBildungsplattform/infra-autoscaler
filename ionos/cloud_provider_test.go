@@ -9,7 +9,7 @@ func TestValidateCloudProviderOK(t *testing.T) {
 	cloudProvider := &CloudProvider{
 		Username: "username",
 		Password: "password",
-		InstancesSource: &ServerSource{
+		ServerSource: &ServerSource{
 			Dynamic: &ServerDynamicSource{
 				DatacenterIds:   []string{"123"},
 				ServerNameRegex: ".*",

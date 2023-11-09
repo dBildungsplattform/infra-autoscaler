@@ -31,7 +31,7 @@ func TestValidateConfigOK(t *testing.T) {
 			Ionos: &ionos.CloudProvider{
 				Username: "username",
 				Password: "password",
-				InstancesSource: &ionos.ServerSource{
+				ServerSource: &ionos.ServerSource{
 					Dynamic: &ionos.ServerDynamicSource{
 						DatacenterIds:   []string{"1234567890"},
 						ServerNameRegex: ".*",
