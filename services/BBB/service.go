@@ -6,43 +6,42 @@ import (
 )
 
 type BBBService struct {
-	name   c.ServiceName
+	Name   string
 	state  BBBServiceState
 	config BBBServiceConfig
 }
 
 type BBBServiceState struct {
-	Name c.ServiceName
+	Name string
 }
 
-func (bbb BBBServiceState) Get_name() c.ServiceName {
+func (bbb BBBServiceState) Get_name() string {
 	return bbb.Name
 }
 
 type BBBServiceConfig struct {
-	Name         string
-	Type         c.InfrastructureType
-	ProviderName c.InfrastructureProviderName
-	Provider     c.IonosProvider
+	ServiceDef   c.ServiceDefinition
+	ProviderType c.ProviderType
+	InfraType    c.InfrastructureType
 }
 
 func (bbb BBBServiceConfig) Get_name() string {
-	return bbb.Name
+	return bbb.ServiceDef.Name
 }
 
-func (bbb BBBServiceConfig) Get_type() c.InfrastructureType {
-	return bbb.Type
+func (bbb BBBServiceConfig) Get_provider_type() c.ProviderType {
+	return bbb.ProviderType
 }
 
-func (bbb BBBServiceConfig) Get_provider_name() c.InfrastructureProviderName {
-	return bbb.ProviderName
+func (bbb BBBServiceConfig) Get_infrastructure_type() c.InfrastructureType {
+	return bbb.InfraType
 }
 
-func (bbb BBBService) Init(name c.ServiceName) {
+func (bbb BBBService) Init(sd *c.ServiceDefinition) {
 	fmt.Println("Initializing BBB service")
-	bbb.name = name
-	bbb.state = BBBServiceState{Name: name}
-	bbb.config = BBBServiceConfig(*load_config())
+	bbb.Name = sd.Name
+	bbb.state = BBBServiceState{Name: sd.Name} // TODO: Load proper state from provider API
+	bbb.config = BBBServiceConfig(*load_config(sd))
 	fmt.Println("BBB service initialized")
 	fmt.Printf("Config: \n %+v \n", bbb.config)
 }
@@ -55,10 +54,10 @@ func (bbb *BBBService) Get_config() BBBServiceConfig {
 	return bbb.config
 }
 
-func load_config() *BBBServiceConfig {
+func load_config(sd *c.ServiceDefinition) *BBBServiceConfig {
 	return &BBBServiceConfig{
-		Name:     "BBB",
-		Type:     c.Server,
-		Provider: c.Load_provider(c.Ionos),
+		ServiceDef:   *sd,
+		ProviderType: c.Ionos,
+		InfraType:    c.Server,
 	}
 }

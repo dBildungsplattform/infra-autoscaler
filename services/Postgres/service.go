@@ -6,43 +6,42 @@ import (
 )
 
 type PostgresService struct {
-	name   c.ServiceName
+	name   string
 	state  PostgresServiceState
 	config PostgresServiceConfig
 }
 
 type PostgresServiceState struct {
-	Name c.ServiceName
+	Name string
 }
 
-func (postgres PostgresServiceState) Get_name() c.ServiceName {
+func (postgres PostgresServiceState) Get_name() string {
 	return postgres.Name
 }
 
 type PostgresServiceConfig struct {
-	Name         string
-	Type         c.InfrastructureType
-	ProviderName c.InfrastructureProviderName
-	Provider     c.IonosProvider
+	ServiceDef   c.ServiceDefinition
+	ProviderType c.ProviderType
+	InfraType    c.InfrastructureType
 }
 
 func (postgres PostgresServiceConfig) Get_name() string {
-	return postgres.Name
+	return postgres.ServiceDef.Name
 }
 
-func (postgres PostgresServiceConfig) Get_type() c.InfrastructureType {
-	return postgres.Type
+func (postgres PostgresServiceConfig) Get_provider_type() c.ProviderType {
+	return postgres.ProviderType
 }
 
-func (postgres PostgresServiceConfig) Get_provider_name() c.InfrastructureProviderName {
-	return postgres.ProviderName
+func (postgres PostgresServiceConfig) Get_infrastructure_type() c.InfrastructureType {
+	return postgres.InfraType
 }
 
-func (postgres PostgresService) Init(name c.ServiceName) {
+func (postgres PostgresService) Init(sd *c.ServiceDefinition) {
 	fmt.Println("Initializing Postgres service")
-	postgres.name = name
-	postgres.state = PostgresServiceState{Name: name}
-	postgres.config = PostgresServiceConfig(*load_config())
+	postgres.name = sd.Name
+	postgres.state = PostgresServiceState{Name: sd.Name}
+	postgres.config = PostgresServiceConfig(*load_config(sd))
 	fmt.Println("Postgres service initialized")
 	fmt.Printf("Config: \n %+v \n", postgres.config)
 }
@@ -55,10 +54,10 @@ func (postgres *PostgresService) Get_config() PostgresServiceConfig {
 	return postgres.config
 }
 
-func load_config() *PostgresServiceConfig {
+func load_config(sd *c.ServiceDefinition) *PostgresServiceConfig {
 	return &PostgresServiceConfig{
-		Name:     "Postgres",
-		Type:     c.Server,
-		Provider: c.Load_provider(c.Ionos),
+		ServiceDef:   *sd,
+		ProviderType: c.Ionos,
+		InfraType:    c.Server, // TODO: Additional 'managed service' type?
 	}
 }

@@ -1,24 +1,17 @@
 package common
 
 type Service interface {
-	Init(ServiceName)
+	Init(*ServiceDefinition)
 }
 
 type ServiceState interface {
-	Get_name() ServiceName
+	Get_name() string
 }
 
 type ServiceConfig interface {
-	Get_name() ServiceName
-	Get_type() InfrastructureType
-	Get_provider_name() InfrastructureProviderName
-}
-
-type IonosProvider struct {
-	ProviderName  InfrastructureProviderName
-	Username      string
-	Password      string
-	DatacenterIds []string
+	Get_name() string
+	Get_provider_type() ProviderType
+	Get_infrastructure_type() InfrastructureType
 }
 
 type InfrastructureType int
@@ -29,22 +22,28 @@ const (
 	Kubernetes
 )
 
-type InfrastructureProvider interface {
-	IonosProvider
+type Provider interface {
+	Get_login_id() string
+	Get_login_secret() string
+	Get_type() ProviderType
+	Get_name() string
 }
 
-type InfrastructureProviderName string
+type ProviderDefinition struct {
+	Name string
+	Type ProviderType
+}
+
+type ProviderType string
 
 const (
 	Ionos = "Ionos"
 )
 
 type ServiceDefinition struct {
-	Name ServiceName
+	Name string
 	Type ServiceType
 }
-
-type ServiceName string
 
 type ServiceType string
 

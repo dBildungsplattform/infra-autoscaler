@@ -11,6 +11,9 @@ func main() {
 		{Name: "bbb2", Type: common.BBB},
 		{Name: "postgres1", Type: common.Postgres},
 	}
-	app := core.Load_app(&ServiceDefinitions)
+	ProviderDefinition := []common.ProviderDefinition{
+		{Name: "Ionos", Type: common.Ionos},
+	}
+	app := core.Init_app(&ServiceDefinitions, &ProviderDefinition)
 	app.Scale()
 }
