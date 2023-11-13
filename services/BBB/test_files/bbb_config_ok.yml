@@ -1,11 +1,8 @@
-cloud_provider:
-  ionos:
-    username: username
-    password: pw123
-    server_source:
-      dynamic:
-        datacenter_ids: [UUID]
-        server_name_regex: ".*"
+provider_type: Ionos
+server_source:
+  dynamic:
+    datacenter_ids: [UUID]
+    server_name_regex: ".*"
 resources:
   cpu:
     min_cores: 4

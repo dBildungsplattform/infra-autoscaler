@@ -1,4 +1,4 @@
-package ionos
+package shared
 
 import (
 	"fmt"
@@ -11,10 +11,11 @@ type ServerSource struct {
 }
 
 type ServerDynamicSource struct {
-	DatacenterIds   []string `yaml:"datacenter_ids"`
+	DatacenterIds   []string `yaml:"datacenter_ids"` // TODO: change provider specific name to generic
 	ServerNameRegex string   `yaml:"server_name_regex"`
 }
 
+// TODO: static vs dynamic could be handled in code instead of config
 type ServerStaticSource []struct {
 	DatacenterId string `yaml:"datacenter_id"`
 	ServerId     string `yaml:"server_id"`

@@ -1,18 +1,12 @@
-package config
+package shared
 
 import (
 	"os"
-	v "scaler/validater"
 
 	"gopkg.in/yaml.v3"
 )
 
-// Can't be in this package because of circular dependencies
-// type Config struct {
-// 	BBB *BBBConfig
-// }
-
-func LoadConfig[V v.Validater](path string) (*V, error) {
+func LoadConfig[V Validater](path string) (*V, error) {
 	r, ok := os.ReadFile(path)
 	if ok != nil {
 		return nil, ok
@@ -24,7 +18,7 @@ func LoadConfig[V v.Validater](path string) (*V, error) {
 	return config, nil
 }
 
-func ParseConfig[V v.Validater](data []byte) (*V, error) {
+func ParseConfig[V Validater](data []byte) (*V, error) {
 	var config V
 	err := yaml.Unmarshal(data, &config)
 	if err != nil {

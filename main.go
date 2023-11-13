@@ -1,19 +1,19 @@
 package main
 
 import (
-	"scaler/common"
-	"scaler/core"
+	c "scaler/core"
+	s "scaler/shared"
 )
 
 func main() {
-	ServiceDefinitions := []common.ServiceDefinition{
-		{Name: "bbb1", Type: common.BBB},
-		{Name: "bbb2", Type: common.BBB},
-		{Name: "postgres1", Type: common.Postgres},
+	ServiceDefinitions := []s.ServiceDefinition{
+		{Name: "bbb1", Type: s.BBB},
+		{Name: "bbb2", Type: s.BBB},
+		{Name: "postgres1", Type: s.Postgres},
 	}
-	ProviderDefinition := []common.ProviderDefinition{
-		{Name: "Ionos", Type: common.Ionos},
+	ProviderDefinition := []s.ProviderDefinition{
+		{Name: "Ionos", Type: s.Ionos},
 	}
-	app := core.Init_app(&ServiceDefinitions, &ProviderDefinition)
+	app := c.Init_app(&ServiceDefinitions, &ProviderDefinition)
 	app.Scale()
 }

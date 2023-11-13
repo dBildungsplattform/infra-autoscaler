@@ -2,7 +2,7 @@ package BBB
 
 import (
 	"fmt"
-	c "scaler/common"
+	s "scaler/shared"
 )
 
 type BBBService struct {
@@ -20,24 +20,30 @@ func (bbb BBBServiceState) Get_name() string {
 }
 
 type BBBServiceConfig struct {
-	ServiceDef   c.ServiceDefinition
-	ProviderType c.ProviderType
-	InfraType    c.InfrastructureType
+	ServiceDef       s.ServiceDefinition
+	ProviderType     s.ProviderType `yaml:"provider_type"`
+	InfraType        s.InfrastructureType
+	CycleTimeSeconds int             `yaml:"cycle_time_seconds"`
+	ServerSource     *s.ServerSource `yaml:"server_source"`
+	Resources        s.Resources
+	BBB              struct {
+		ApiToken string `yaml:"api_token"`
+	}
 }
 
 func (bbb BBBServiceConfig) Get_name() string {
 	return bbb.ServiceDef.Name
 }
 
-func (bbb BBBServiceConfig) Get_provider_type() c.ProviderType {
+func (bbb BBBServiceConfig) Get_provider_type() s.ProviderType {
 	return bbb.ProviderType
 }
 
-func (bbb BBBServiceConfig) Get_infrastructure_type() c.InfrastructureType {
+func (bbb BBBServiceConfig) Get_infrastructure_type() s.InfrastructureType {
 	return bbb.InfraType
 }
 
-func (bbb BBBService) Init(sd *c.ServiceDefinition) {
+func (bbb BBBService) Init(sd *s.ServiceDefinition) {
 	fmt.Println("Initializing BBB service")
 	bbb.Name = sd.Name
 	bbb.state = BBBServiceState{Name: sd.Name} // TODO: Load proper state from provider API
@@ -46,7 +52,7 @@ func (bbb BBBService) Init(sd *c.ServiceDefinition) {
 	fmt.Printf("Config: \n %+v \n", bbb.config)
 }
 
-func (bbb *BBBService) Get_state() c.ServiceState {
+func (bbb *BBBService) Get_state() s.ServiceState {
 	return bbb.state
 }
 
@@ -54,10 +60,30 @@ func (bbb *BBBService) Get_config() BBBServiceConfig {
 	return bbb.config
 }
 
-func load_config(sd *c.ServiceDefinition) *BBBServiceConfig {
+func load_config(sd *s.ServiceDefinition) *BBBServiceConfig {
 	return &BBBServiceConfig{
 		ServiceDef:   *sd,
-		ProviderType: c.Ionos,
-		InfraType:    c.Server,
+		ProviderType: s.Ionos,
+		InfraType:    s.Server,
 	}
+}
+
+func (config BBBServiceConfig) Validate() error {
+	if err := config.Resources.Validate(); err != nil {
+		return err
+	}
+	if config.BBB.ApiToken == "" {
+		return fmt.Errorf("bbb.api_token is empty")
+	}
+	if err := config.ProviderType.Validate(); err != nil {
+		return err
+	}
+	ss := config.ServerSource
+	if ss == nil {
+		return fmt.Errorf("instances_source is nil")
+	}
+	if err := ss.Validate(); err != nil {
+		return err
+	}
+	return nil
 }

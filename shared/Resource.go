@@ -1,6 +1,12 @@
-package config
+package shared
 
 import "fmt"
+
+/*** Resource definition ***/
+type Resources struct {
+	Cpu    *CpuResources
+	Memory *MemoryResources
+}
 
 type CpuResources struct {
 	MinCores int     `yaml:"min_cores"`
@@ -14,6 +20,23 @@ type MemoryResources struct {
 	MaxBytes int     `yaml:"max_bytes"`
 	MinUsage float32 `yaml:"min_usage"`
 	MaxUsage float32 `yaml:"max_usage"`
+}
+
+func (r Resources) Validate() error {
+	if cpu := r.Cpu; cpu != nil {
+		if err := cpu.Validate(); err != nil {
+			return err
+		}
+	}
+	if memory := r.Memory; memory != nil {
+		if err := memory.Validate(); err != nil {
+			return err
+		}
+	}
+	if r.Cpu == nil && r.Memory == nil {
+		return fmt.Errorf("resources.cpu and resources.memory are nil, at least one must be set")
+	}
+	return nil
 }
 
 func (c CpuResources) Validate() error {

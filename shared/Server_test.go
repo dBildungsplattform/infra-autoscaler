@@ -1,7 +1,6 @@
-package ionos
+package shared
 
 import (
-	v "scaler/validater"
 	"testing"
 )
 
@@ -10,7 +9,7 @@ func TestValidateServerDynamicSourceOK(t *testing.T) {
 		DatacenterIds:   []string{"123"},
 		ServerNameRegex: ".*",
 	}
-	v.ValidatePass(t, serverSource)
+	ValidatePass(t, serverSource)
 }
 
 func TestValidateServerDynamicSourceEmptyDatacenterIds(t *testing.T) {
@@ -18,7 +17,7 @@ func TestValidateServerDynamicSourceEmptyDatacenterIds(t *testing.T) {
 		DatacenterIds:   []string{},
 		ServerNameRegex: ".*",
 	}
-	v.ValidateFail(t, serverSource)
+	ValidateFail(t, serverSource)
 }
 
 func TestValidateServerDynamicSourceBadRegex(t *testing.T) {
@@ -26,7 +25,7 @@ func TestValidateServerDynamicSourceBadRegex(t *testing.T) {
 		DatacenterIds:   []string{"123"},
 		ServerNameRegex: "*",
 	}
-	v.ValidateFail(t, serverSource)
+	ValidateFail(t, serverSource)
 }
 
 func TestValidateServerStaticSourceOK(t *testing.T) {
@@ -36,12 +35,12 @@ func TestValidateServerStaticSourceOK(t *testing.T) {
 			ServerId:     "456",
 		},
 	}
-	v.ValidatePass(t, serverSource)
+	ValidatePass(t, serverSource)
 }
 
 func TestValidateServerStaticSourceEmpty(t *testing.T) {
 	serverSource := ServerStaticSource{}
-	v.ValidateFail(t, serverSource)
+	ValidateFail(t, serverSource)
 }
 
 func TestValidateServerStaticSourceEmptyDatacenterId(t *testing.T) {
@@ -51,7 +50,7 @@ func TestValidateServerStaticSourceEmptyDatacenterId(t *testing.T) {
 			ServerId:     "456",
 		},
 	}
-	v.ValidateFail(t, serverSource)
+	ValidateFail(t, serverSource)
 }
 
 func TestValidateServerStaticSourceEmptyServerId(t *testing.T) {
@@ -61,7 +60,7 @@ func TestValidateServerStaticSourceEmptyServerId(t *testing.T) {
 			ServerId:     "",
 		},
 	}
-	v.ValidateFail(t, serverSource)
+	ValidateFail(t, serverSource)
 }
 
 func TestValidateServerSourceOK(t *testing.T) {
@@ -71,10 +70,10 @@ func TestValidateServerSourceOK(t *testing.T) {
 			ServerNameRegex: ".*",
 		},
 	}
-	v.ValidatePass(t, serverSource)
+	ValidatePass(t, serverSource)
 }
 
 func TestValidateServerSourceNotOk(t *testing.T) {
 	serverSource := &ServerSource{}
-	v.ValidateFail(t, serverSource)
+	ValidateFail(t, serverSource)
 }

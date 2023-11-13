@@ -1,7 +1,6 @@
-package config
+package shared
 
 import (
-	v "scaler/validater"
 	"testing"
 )
 
@@ -12,7 +11,7 @@ func TestValidateCpuResourcesOK(t *testing.T) {
 		MinUsage: 0.1,
 		MaxUsage: 0.5,
 	}
-	v.ValidatePass(t, cpuResources)
+	ValidatePass(t, cpuResources)
 }
 
 func TestValidateCpuResourcesMinCoresZero(t *testing.T) {
@@ -22,7 +21,7 @@ func TestValidateCpuResourcesMinCoresZero(t *testing.T) {
 		MinUsage: 0.1,
 		MaxUsage: 0.5,
 	}
-	v.ValidateFail(t, cpuResources)
+	ValidateFail(t, cpuResources)
 }
 
 func TestValidateCpuResourcesMaxCoresLessThanMinCores(t *testing.T) {
@@ -32,7 +31,7 @@ func TestValidateCpuResourcesMaxCoresLessThanMinCores(t *testing.T) {
 		MinUsage: 0.1,
 		MaxUsage: 0.5,
 	}
-	v.ValidateFail(t, cpuResources)
+	ValidateFail(t, cpuResources)
 }
 
 func TestValidateCpuResourcesMaxUsageZero(t *testing.T) {
@@ -42,7 +41,7 @@ func TestValidateCpuResourcesMaxUsageZero(t *testing.T) {
 		MinUsage: 0.1,
 		MaxUsage: 0,
 	}
-	v.ValidateFail(t, cpuResources)
+	ValidateFail(t, cpuResources)
 }
 
 func TestValidateCpuResourcesMaxUsageGreaterThanOne(t *testing.T) {
@@ -52,7 +51,7 @@ func TestValidateCpuResourcesMaxUsageGreaterThanOne(t *testing.T) {
 		MinUsage: 0.1,
 		MaxUsage: 1.1,
 	}
-	v.ValidateFail(t, cpuResources)
+	ValidateFail(t, cpuResources)
 }
 
 func TestValidateMemoryResourcesOK(t *testing.T) {
@@ -62,7 +61,7 @@ func TestValidateMemoryResourcesOK(t *testing.T) {
 		MinUsage: 0.1,
 		MaxUsage: 0.5,
 	}
-	v.ValidatePass(t, memoryResources)
+	ValidatePass(t, memoryResources)
 }
 
 func TestValidateMemoryResourcesMinBytesLessThan1024(t *testing.T) {
@@ -72,7 +71,7 @@ func TestValidateMemoryResourcesMinBytesLessThan1024(t *testing.T) {
 		MinUsage: 0.1,
 		MaxUsage: 0.5,
 	}
-	v.ValidateFail(t, memoryResources)
+	ValidateFail(t, memoryResources)
 }
 
 func TestValidateMemoryResourcesMaxBytesLessThanMinBytes(t *testing.T) {
@@ -82,7 +81,7 @@ func TestValidateMemoryResourcesMaxBytesLessThanMinBytes(t *testing.T) {
 		MinUsage: 0.1,
 		MaxUsage: 0.5,
 	}
-	v.ValidateFail(t, memoryResources)
+	ValidateFail(t, memoryResources)
 }
 
 func TestValidateMemoryResourcesMaxUsageZero(t *testing.T) {
@@ -92,7 +91,7 @@ func TestValidateMemoryResourcesMaxUsageZero(t *testing.T) {
 		MinUsage: 0.1,
 		MaxUsage: 0,
 	}
-	v.ValidateFail(t, memoryResources)
+	ValidateFail(t, memoryResources)
 }
 
 func TestValidateMemoryResourcesMaxUsageGreaterThanOne(t *testing.T) {
@@ -102,5 +101,5 @@ func TestValidateMemoryResourcesMaxUsageGreaterThanOne(t *testing.T) {
 		MinUsage: 0.1,
 		MaxUsage: 1.1,
 	}
-	v.ValidateFail(t, memoryResources)
+	ValidateFail(t, memoryResources)
 }

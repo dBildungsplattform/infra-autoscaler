@@ -1,20 +1,20 @@
 package core
 
 import (
-	c "scaler/common"
-	"scaler/providers/Ionos"
+	"scaler/providers"
 	"scaler/services/BBB"
 	"scaler/services/Postgres"
+	s "scaler/shared"
 )
 
 type ScalerApp struct {
-	serviceDefinitions  *[]c.ServiceDefinition
-	providerDefinitions *[]c.ProviderDefinition
-	services            []*c.Service
-	providers           []*c.Provider
+	serviceDefinitions  *[]s.ServiceDefinition
+	providerDefinitions *[]s.ProviderDefinition
+	services            []*s.Service
+	providers           []*s.Provider
 }
 
-func Init_app(sd *[]c.ServiceDefinition, pd *[]c.ProviderDefinition) *ScalerApp {
+func Init_app(sd *[]s.ServiceDefinition, pd *[]s.ProviderDefinition) *ScalerApp {
 	return &ScalerApp{
 		serviceDefinitions:  sd,
 		providerDefinitions: pd,
@@ -23,29 +23,29 @@ func Init_app(sd *[]c.ServiceDefinition, pd *[]c.ProviderDefinition) *ScalerApp 
 	}
 }
 
-func init_services(sd *[]c.ServiceDefinition) []*c.Service {
-	s := []*c.Service{}
+func init_services(sd *[]s.ServiceDefinition) []*s.Service {
+	service := []*s.Service{}
 	for _, serviceDef := range *sd {
 		switch t := serviceDef.Type; t {
-		case c.BBB:
-			var bbb c.Service = BBB.BBBService{}
+		case s.BBB:
+			var bbb s.Service = BBB.BBBService{}
 			bbb.Init(&serviceDef)
-			s = append(s, &bbb)
-		case c.Postgres:
-			var postgres c.Service = Postgres.PostgresService{}
+			service = append(service, &bbb)
+		case s.Postgres:
+			var postgres s.Service = Postgres.PostgresService{}
 			postgres.Init(&serviceDef)
-			s = append(s, &postgres)
+			service = append(service, &postgres)
 		}
 	}
-	return s
+	return service
 }
 
-func init_providers(pd *[]c.ProviderDefinition) []*c.Provider {
-	p := []*c.Provider{}
+func init_providers(pd *[]s.ProviderDefinition) []*s.Provider {
+	p := []*s.Provider{}
 	for _, providerDef := range *pd {
 		switch t := providerDef.Type; t {
-		case c.Ionos:
-			var ionos c.Provider = Ionos.Provider(load_provider[Ionos.Provider](providerDef))
+		case s.Ionos:
+			var ionos s.Provider = s.Provider(load_provider[providers.Ionos](providerDef))
 			p = append(p, &ionos)
 		}
 	}
