@@ -1,11 +1,14 @@
 package main
 
 import (
+	"flag"
 	c "scaler/core"
 )
 
 func main() {
-	configPath := "config/scaler_config.yml" // TODO make this a command line arg
-	app := c.InitApp(configPath)
+	configPath := flag.String("config", "config/scaler_config.yml", "path to config file")
+	flag.Parse()
+
+	app := c.InitApp(*configPath)
 	app.Scale()
 }
