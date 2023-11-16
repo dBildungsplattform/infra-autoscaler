@@ -13,12 +13,12 @@ FROM build_deps AS build
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build -o scaler -ldflags '-w -extldflags "-static"' .
+RUN CGO_ENABLED=0 go build -o infra-autoscaler -ldflags '-w -extldflags "-static"' .
 
 FROM alpine:3.18
 
 RUN apk add --no-cache ca-certificates
 
-COPY --from=build /workspace/scaler /usr/local/bin/scaler
+COPY --from=build /workspace/infra-autoscaler /usr/local/bin/infra-autoscaler
 
-ENTRYPOINT ["scaler"]
+ENTRYPOINT ["infra-autoscaler"]
