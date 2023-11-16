@@ -17,7 +17,7 @@ jobs:
       contents: read
     uses: dBildungsplattform/dbp-github-workflows/.github/workflows/image-publish-trivy.yaml@2.0.0
     with:
-      image_name: "scaler"
+      image_name: "infra-autoscaler"
       run_trivy_scan: true
       tag_generation: "ticket_from_branch"
       add_latest_tag: false
