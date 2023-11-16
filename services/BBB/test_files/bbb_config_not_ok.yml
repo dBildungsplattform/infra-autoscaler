@@ -1,7 +1,0 @@
-instances_source:
-  ionos:
-    datacenter_ids: [UUID]
-    server_name_regex: ".*"
-cycle_time_seconds: 60
-bbb:
-  api_token: $BBB_API_TOKEN
