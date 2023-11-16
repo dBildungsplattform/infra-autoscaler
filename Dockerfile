@@ -20,5 +20,5 @@ FROM alpine:3.18
 RUN apk add --no-cache ca-certificates
 
 COPY --from=build /workspace/infra-autoscaler /usr/local/bin/infra-autoscaler
-
+COPY config/scaler_config.yml config/scaler_config.yml
 ENTRYPOINT ["infra-autoscaler"]
