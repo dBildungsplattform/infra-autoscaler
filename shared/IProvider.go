@@ -6,14 +6,7 @@ import "fmt"
 type Provider interface {
 	Get_login_id() string
 	Get_login_secret() string
-	Get_type() ProviderType
-	Get_name() string
 	Validate() error
-}
-
-type ProviderDefinition struct {
-	Name string
-	Type ProviderType
 }
 
 type ProviderType string

@@ -4,8 +4,8 @@ import "fmt"
 
 /*** Resource definition ***/
 type Resources struct {
-	Cpu    *CpuResources
-	Memory *MemoryResources
+	Cpu    *CpuResources    `yaml:"cpu"`
+	Memory *MemoryResources `yaml:"memory"`
 }
 
 type CpuResources struct {

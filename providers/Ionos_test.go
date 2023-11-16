@@ -7,8 +7,16 @@ import (
 
 func TestValidateIonosProviderOK(t *testing.T) {
 	cloudProvider := &Ionos{
-		Username: "username",
-		Password: "password",
+		IonosConfig: ProviderConfig{
+			Username: "username",
+			Password: "password",
+			ServerSource: &s.ServerSource{
+				Dynamic: &s.ServerDynamicSource{
+					DatacenterIds:   []string{"datacenter-id-1", "datacenter-id-2"},
+					ServerNameRegex: "server-name-regex",
+				},
+			},
+		},
 	}
 	s.ValidatePass(t, cloudProvider)
 }

@@ -11,11 +11,10 @@ type ServerSource struct {
 }
 
 type ServerDynamicSource struct {
-	DatacenterIds   []string `yaml:"datacenter_ids"` // TODO: change provider specific name to generic
+	DatacenterIds   []string `yaml:"datacenter_ids"`
 	ServerNameRegex string   `yaml:"server_name_regex"`
 }
 
-// TODO: static vs dynamic could be handled in code instead of config
 type ServerStaticSource []struct {
 	DatacenterId string `yaml:"datacenter_id"`
 	ServerId     string `yaml:"server_id"`

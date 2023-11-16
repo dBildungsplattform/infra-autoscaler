@@ -1,0 +1,22 @@
+app_name: bbb-scaler	
+service_type: BBB
+provider_type: Ionos
+ionos_config:
+  username: $IONOS_USERNAME
+  password: $IONOS_PASSWORD
+  server_source:
+    dynamic:
+      datacenter_ids: [UUID]
+      server_name_regex: ".*"
+bbb_config: 
+  resources:
+    cpu:
+      min_cores: 4
+      max_cores: 16
+      max_usage: 0.7
+    memory:
+      min_bytes: 12288
+      max_bytes: 32768
+      max_usage: 0.7
+  cycle_time_seconds: 60
+  api_token: $BBB_API_TOKEN
