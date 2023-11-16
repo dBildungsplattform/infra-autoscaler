@@ -1,4 +1,4 @@
-package BBB
+package services
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 
 type BBBService struct {
 	State  BBBServiceState  `yaml:"-"`
-	Config BBBServiceConfig `yaml:"service_config"`
+	Config BBBServiceConfig `yaml:"bbb_config"`
 }
 
 type BBBServiceState struct {

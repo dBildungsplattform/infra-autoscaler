@@ -7,7 +7,7 @@ import (
 
 func TestValidateIonosProviderOK(t *testing.T) {
 	cloudProvider := &Ionos{
-		ProviderConfig: ProviderConfig{
+		IonosConfig: ProviderConfig{
 			Username: "username",
 			Password: "password",
 			ServerSource: &s.ServerSource{

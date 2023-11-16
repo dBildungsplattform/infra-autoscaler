@@ -1,14 +1,14 @@
 app_name: bbb-scaler	
 service_type: BBB
 provider_type: Ionos
-provider_config:
+ionos_config:
   username: $IONOS_USERNAME
   password: $IONOS_PASSWORD
   server_source:
     dynamic:
       datacenter_ids: [UUID]
       server_name_regex: ".*"
-service_config: 
+bbb_config: 
   resources:
     cpu:
       min_cores: 4

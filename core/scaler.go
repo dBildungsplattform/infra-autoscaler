@@ -3,8 +3,7 @@ package core
 import (
 	"fmt"
 	"scaler/providers"
-	"scaler/services/BBB"
-	"scaler/services/Postgres"
+	"scaler/services"
 	s "scaler/shared"
 )
 
@@ -34,14 +33,14 @@ func InitApp(configPath string) *ScalerApp {
 func initService(t *s.ServiceType, configFile []byte) *s.Service {
 	switch *t {
 	case s.BBB:
-		bbb, err := s.LoadConfig[BBB.BBBService](configFile)
+		bbb, err := s.LoadConfig[services.BBBService](configFile)
 		if err != nil {
 			panic(err)
 		}
 		service := s.Service(bbb)
 		return &service
 	case s.Postgres:
-		postgres, err := s.LoadConfig[Postgres.PostgresService](configFile)
+		postgres, err := s.LoadConfig[services.PostgresService](configFile)
 		if err != nil {
 			panic(err)
 		}

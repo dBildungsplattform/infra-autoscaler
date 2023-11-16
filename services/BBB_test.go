@@ -1,4 +1,4 @@
-package BBB
+package services
 
 import (
 	s "scaler/shared"
