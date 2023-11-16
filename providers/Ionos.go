@@ -5,37 +5,38 @@ import (
 	s "scaler/shared"
 )
 
-type Ionos struct {
-	ProviderName  string
-	Username      string
-	Password      string
-	DatacenterIds []string
-	ProviderType  s.ProviderType
+type ProviderConfig struct {
+	Username     string
+	Password     string
+	ServerSource *s.ServerSource `yaml:"server_source"`
 	// PostgresSource *PostgresSource `yaml:"postgres_source"`
 }
 
+type Ionos struct {
+	ProviderConfig ProviderConfig `yaml:"provider_config"`
+}
+
 func (i Ionos) Get_login_id() string {
-	return i.Username
+	return i.ProviderConfig.Username
 }
 
 func (i Ionos) Get_login_secret() string {
-	return i.Password
-}
-
-func (i Ionos) Get_type() s.ProviderType {
-	return i.ProviderType
-}
-
-func (i Ionos) Get_name() string {
-	return i.ProviderName
+	return i.ProviderConfig.Password
 }
 
 func (p Ionos) Validate() error {
-	if p.Username == "" {
+	if p.ProviderConfig.Username == "" {
 		return fmt.Errorf("username is empty")
 	}
-	if p.Password == "" {
+	if p.ProviderConfig.Password == "" {
 		return fmt.Errorf("password is empty")
+	}
+	if p.ProviderConfig.ServerSource == nil {
+		return fmt.Errorf("server_source is nil")
+	} else {
+		if err := p.ProviderConfig.ServerSource.Validate(); err != nil {
+			return err
+		}
 	}
 	return nil
 }

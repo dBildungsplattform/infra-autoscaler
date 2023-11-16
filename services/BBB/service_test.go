@@ -20,23 +20,7 @@ func TestValidateConfigOK(t *testing.T) {
 				MaxUsage: 0.5,
 			},
 		},
-		BBB: struct {
-			ApiToken string `yaml:"api_token"`
-		}{
-			ApiToken: "1234567890",
-		},
-		ServiceDef: s.ServiceDefinition{
-			Name: "bbb",
-			Type: s.BBB,
-		},
-		ProviderType: s.Ionos,
-		InfraType:    s.Server,
-		ServerSource: &s.ServerSource{
-			Dynamic: &s.ServerDynamicSource{
-				DatacenterIds:   []string{"1234567890"},
-				ServerNameRegex: ".*",
-			},
-		},
+		ApiToken: "1234567890",
 	}
 	s.ValidatePass(t, bbbConfig)
 }
@@ -47,7 +31,12 @@ func TestValidateConfigNotOK(t *testing.T) {
 }
 
 func TestParseConfigOK(t *testing.T) {
-	c, ok := s.LoadConfig[BBBServiceConfig]("test_files/bbb_config_ok.yml")
+	config, ok := s.OpenConfig("test_files/bbb_config_ok.yml")
+	if ok != nil {
+		t.Fatalf("Failed to open config: %v", ok)
+	}
+
+	c, ok := s.LoadConfig[BBBService](config)
 	if ok != nil {
 		t.Fatalf("Failed to parse config: %v", ok)
 	}
@@ -55,7 +44,12 @@ func TestParseConfigOK(t *testing.T) {
 }
 
 func TestParseConfigNotOK(t *testing.T) {
-	_, ok := s.LoadConfig[BBBServiceConfig]("test_files/bbb_config_not_ok.yml")
+	config, ok := s.OpenConfig("test_files/bbb_config_not_ok.yml")
+	if ok != nil {
+		t.Fatalf("Failed to open config: %v", ok)
+	}
+
+	_, ok = s.LoadConfig[BBBService](config)
 	if ok == nil {
 		t.Fatalf("Expected error but got nil")
 	}

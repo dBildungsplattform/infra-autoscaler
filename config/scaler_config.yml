@@ -20,4 +20,3 @@ service_config:
       max_usage: 0.7
   cycle_time_seconds: 60
   api_token: $BBB_API_TOKEN
-

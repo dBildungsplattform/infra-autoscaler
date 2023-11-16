@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"scaler/providers"
 	"scaler/services/BBB"
 	"scaler/services/Postgres"
@@ -8,50 +9,64 @@ import (
 )
 
 type ScalerApp struct {
-	serviceDefinitions  *[]s.ServiceDefinition
-	providerDefinitions *[]s.ProviderDefinition
-	services            []*s.Service
-	providers           []*s.Provider
+	appDefinition *s.AppDefinition
+	service       *s.Service
+	provider      *s.Provider
 }
 
-func Init_app(sd *[]s.ServiceDefinition, pd *[]s.ProviderDefinition) *ScalerApp {
+func InitApp(configPath string) *ScalerApp {
+	configFile, err := s.OpenConfig(configPath)
+	if err != nil {
+		panic(err)
+	}
+	app, err := s.LoadConfig[s.AppDefinition](configFile)
+	if err != nil {
+		panic(err)
+	}
+
 	return &ScalerApp{
-		serviceDefinitions:  sd,
-		providerDefinitions: pd,
-		services:            init_services(sd),
-		providers:           init_providers(pd),
+		appDefinition: app,
+		service:       initService(&app.ServiceType, configFile),
+		provider:      initProvider(&app.ProviderType, configFile),
 	}
 }
 
-func init_services(sd *[]s.ServiceDefinition) []*s.Service {
-	service := []*s.Service{}
-	for _, serviceDef := range *sd {
-		switch t := serviceDef.Type; t {
-		case s.BBB:
-			var bbb s.Service = BBB.BBBService{}
-			bbb.Init(&serviceDef)
-			service = append(service, &bbb)
-		case s.Postgres:
-			var postgres s.Service = Postgres.PostgresService{}
-			postgres.Init(&serviceDef)
-			service = append(service, &postgres)
+func initService(t *s.ServiceType, configFile []byte) *s.Service {
+	switch *t {
+	case s.BBB:
+		bbb, err := s.LoadConfig[BBB.BBBService](configFile)
+		if err != nil {
+			panic(err)
 		}
+		service := s.Service(bbb)
+		return &service
+	case s.Postgres:
+		postgres, err := s.LoadConfig[Postgres.PostgresService](configFile)
+		if err != nil {
+			panic(err)
+		}
+		service := s.Service(postgres)
+		return &service
 	}
-	return service
+	return nil // TODO: return error
 }
 
-func init_providers(pd *[]s.ProviderDefinition) []*s.Provider {
-	p := []*s.Provider{}
-	for _, providerDef := range *pd {
-		switch t := providerDef.Type; t {
-		case s.Ionos:
-			var ionos s.Provider = s.Provider(load_provider[providers.Ionos](providerDef))
-			p = append(p, &ionos)
+func initProvider(t *s.ProviderType, configFile []byte) *s.Provider {
+	switch *t {
+	case s.Ionos:
+		ionos, err := s.LoadConfig[providers.Ionos](configFile)
+		if err != nil {
+			panic(err)
 		}
+		provider := s.Provider(ionos)
+		return &provider
 	}
-	return p
+	return nil // TODO: return error
 }
 
 func (sc *ScalerApp) Scale() {
+	fmt.Printf("App: %+v \n", sc.appDefinition)
+	fmt.Printf("Service: %+v \n", *sc.service)
+	fmt.Printf("Provider: %+v \n", *sc.provider)
 	panic("not implemented")
 }
