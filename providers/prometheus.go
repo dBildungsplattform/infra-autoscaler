@@ -73,6 +73,6 @@ func (c *PrometheusClient) Query(query string) (float64, error) {
 		}
 		return float64(vector[0].Value), nil
 	default:
-		return 0, fmt.Errorf("enexpected type: %v", result.Type())
+		return 0, fmt.Errorf("unexpected type: %v", result.Type())
 	}
 }
