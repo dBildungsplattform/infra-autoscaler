@@ -16,12 +16,8 @@ type PrometheusConfig struct {
 	Token string
 }
 
-type Prometheus struct {
-	PrometheusConfig PrometheusConfig `yaml:"prometheus_config"`
-}
-
-func (p Prometheus) Validate() error {
-	if p.PrometheusConfig.Url == "" {
+func (p PrometheusConfig) Validate() error {
+	if p.Url == "" {
 		return fmt.Errorf("url is empty")
 	}
 	return nil

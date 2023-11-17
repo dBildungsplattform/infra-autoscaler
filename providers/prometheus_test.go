@@ -6,16 +6,14 @@ import (
 )
 
 func TestValidatePrometheusOK(t *testing.T) {
-	prometheus := &Prometheus{
-		PrometheusConfig: PrometheusConfig{
-			Url: "url",
-		},
+	prometheus := &PrometheusConfig{
+		Url: "url",
 	}
 	s.ValidatePass(t, prometheus)
 }
 
-func TestValidatePrometheusNotOK(t *testing.T) {
-	prometheus := &Prometheus{}
+func TestValidatePrometheusConfigNotOK(t *testing.T) {
+	prometheus := &PrometheusConfig{}
 	s.ValidateFail(t, prometheus)
 }
 

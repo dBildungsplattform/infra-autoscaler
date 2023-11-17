@@ -16,10 +16,8 @@ func TestValidateIonosProviderOK(t *testing.T) {
 					ServerNameRegex: "server-name-regex",
 				},
 			},
-			Prometheus: &Prometheus{
-				PrometheusConfig: PrometheusConfig{
-					Url: "url",
-				},
+			PrometheusConfig: PrometheusConfig{
+				Url: "url",
 			},
 		},
 	}

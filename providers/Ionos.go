@@ -10,7 +10,7 @@ type ProviderConfig struct {
 	Password     string
 	ServerSource *s.ServerSource `yaml:"server_source"`
 	// PostgresSource *PostgresSource `yaml:"postgres_source"`
-	Prometheus *Prometheus `yaml:"prometheus"`
+	PrometheusConfig PrometheusConfig `yaml:"prometheus_config"`
 }
 
 type Ionos struct {
@@ -39,7 +39,7 @@ func (p Ionos) Validate() error {
 			return err
 		}
 	}
-	if err := p.IonosConfig.Prometheus.Validate(); err != nil {
+	if err := p.IonosConfig.PrometheusConfig.Validate(); err != nil {
 		return err
 	}
 	return nil
