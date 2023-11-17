@@ -1,4 +1,4 @@
-app_name: bbb-scaler	
+app_name: bbb-scaler
 service_type: BBB
 provider_type: Ionos
 ionos_config:
@@ -8,7 +8,10 @@ ionos_config:
     dynamic:
       datacenter_ids: [UUID]
       server_name_regex: ".*"
-bbb_config: 
+  prometheus_config:
+    url: https://grafana.dbildungsplattform.de
+    token: $GRAFANA_TOKEN
+bbb_config:
   resources:
     cpu:
       min_cores: 4
