@@ -1,8 +1,6 @@
 package providers
 
 import (
-	"os"
-
 	s "scaler/shared"
 	"testing"
 )
@@ -23,8 +21,7 @@ func TestValidatePrometheusNotOK(t *testing.T) {
 
 func TestInitPrometheusClientOK(t *testing.T) {
 	config := PrometheusConfig{
-		Url:   "https://grafana.dbildungscloud.org/api/datasources/proxy/1/",
-		Token: os.Getenv("PROMETHEUS_TOKEN"),
+		Url: "https://prometheus.example.com",
 	}
 	client := &PrometheusClient{}
 	err := client.Init(config)
