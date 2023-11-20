@@ -31,7 +31,6 @@ func (i *Ionos) Init() error {
 func (i Ionos) GetServers(depth int) ([]s.Server, error) {
 	var servers []s.Server
 	for _, datacenterId := range i.Config.ServerSource.Dynamic.DatacenterIds {
-		fmt.Println(datacenterId)
 		dc_servers, _, err := i.Api.ServersApi.DatacentersServersGet(context.Background(), datacenterId).Depth(int32(depth)).Execute()
 		if err != nil {
 			return nil, fmt.Errorf("error while getting servers: %s", err)
