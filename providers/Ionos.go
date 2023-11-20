@@ -9,8 +9,8 @@ import (
 )
 
 type ProviderConfig struct {
-	Username     string          `yaml:"username"`
-	Password     string          `yaml:"password"`
+	Username     s.StringFromEnv `yaml:"username"`
+	Password     s.StringFromEnv `yaml:"password"`
 	ServerSource *s.ServerSource `yaml:"server_source"`
 }
 
@@ -21,12 +21,10 @@ type Ionos struct {
 
 func (i *Ionos) Init() error {
 	i.Api = *ic.NewAPIClient(ic.NewConfiguration(
-		i.Config.Username,
-		i.Config.Password,
+		string(i.Config.Username),
+		string(i.Config.Password),
 		"",
 		""))
-	fmt.Printf("Initialized Ionos API client with username: %s\n", i.Config.Username)
-	fmt.Printf("Initialized Ionos API client with password: %s\n", i.Config.Password)
 	return nil
 }
 
