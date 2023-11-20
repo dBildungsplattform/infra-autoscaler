@@ -34,7 +34,7 @@ func LoadConfig[V Validater](data []byte) (*V, error) {
 type StringFromEnv string
 
 // Regex to match environment variables
-// Variable must start with "$" and contain only uppercase letters and underscores
+// Variable must start with "$" and contain only uppercase letters, numbers, and underscores
 var envRegex = regexp.MustCompile(`^\$([A-Z_1-9]+)$`)
 
 func (s *StringFromEnv) UnmarshalYAML(node *yaml.Node) error {
