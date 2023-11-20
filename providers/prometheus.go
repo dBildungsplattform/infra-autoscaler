@@ -3,6 +3,7 @@ package providers
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/prometheus/client_golang/api"
@@ -30,9 +31,13 @@ type PrometheusClient struct {
 
 func (c *PrometheusClient) Init(prometheusConfig PrometheusConfig) error {
 	var err error = nil
+	var rt http.RoundTripper = api.DefaultRoundTripper
+	if prometheusConfig.Token != "" {
+		rt = config.NewAuthorizationCredentialsRoundTripper("Bearer", config.Secret(prometheusConfig.Token), api.DefaultRoundTripper)
+	}
 	c.Client, err = api.NewClient(api.Config{
 		Address:      prometheusConfig.Url,
-		RoundTripper: config.NewAuthorizationCredentialsRoundTripper("Bearer", config.Secret(prometheusConfig.Token), api.DefaultRoundTripper),
+		RoundTripper: rt,
 	})
 	if err != nil {
 		return err
@@ -41,12 +46,13 @@ func (c *PrometheusClient) Init(prometheusConfig PrometheusConfig) error {
 	return nil
 }
 
-func (c *PrometheusClient) QueryCPUUsage(serverLabels string) (float64, error) {
+func (c *PrometheusClient) QueryServerCPUUsage(serverLabels string) (float64, error) {
+	// TODO: Move the queries to config ?
 	cpuUsageQuery := fmt.Sprintf("avg without (mode,cpu) (1 - rate(node_cpu_seconds_total{mode=\"idle\",%s}[30s]))", serverLabels)
 	return c.Query(cpuUsageQuery)
 }
 
-func (c *PrometheusClient) QueryMemoryUsage(serverLabels string) (float64, error) {
+func (c *PrometheusClient) QueryServerMemoryUsage(serverLabels string) (float64, error) {
 	memoryUsageQuery := fmt.Sprintf("(node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes) / node_memory_MemTotal_bytes{%s}", serverLabels)
 	return c.Query(memoryUsageQuery)
 }
