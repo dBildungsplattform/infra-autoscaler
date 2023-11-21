@@ -1,9 +1,9 @@
-app_name: bbb-scaler	
+app_name: bbb-scaler
 service_type: BBB
 provider_type: Ionos
 ionos_config:
-  username: $IONOS_USERNAME 
-  password: $IONOS_PASSWORD 
+  username: $IONOS_USERNAME
+  password: $IONOS_PASSWORD
   server_source:
     dynamic:
       datacenter_ids: 

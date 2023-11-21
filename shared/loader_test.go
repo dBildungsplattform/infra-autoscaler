@@ -17,6 +17,7 @@ func (t TestStruct) Validate() error {
 
 func TestLoadEnv(t *testing.T) {
 	os.Setenv("TEST_ENV_1", "value1")
+	defer os.Unsetenv("TEST_ENV_1")
 
 	testConfig, err := OpenConfig("test_files/env.yaml")
 	if err != nil {
@@ -36,8 +37,6 @@ func TestLoadEnv(t *testing.T) {
 	if testStruct.Test3 != "not_an_env_var" {
 		t.Errorf("expected Test3 to be not_an_env_var, got %s", testStruct.Test3)
 	}
-
-	defer os.Unsetenv("TEST_ENV_1")
 }
 
 func TestLoadUnsetEnv(t *testing.T) {
