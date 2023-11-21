@@ -1,4 +1,4 @@
-package providers
+package metrics
 
 import (
 	s "scaler/shared"
@@ -6,23 +6,27 @@ import (
 )
 
 func TestValidatePrometheusOK(t *testing.T) {
-	prometheus := &PrometheusConfig{
-		Url: "url",
+	prometheus := &Prometheus{
+		PrometheusConfig: PrometheusConfig{
+			Url: "url",
+		},
 	}
 	s.ValidatePass(t, prometheus)
 }
 
 func TestValidatePrometheusConfigNotOK(t *testing.T) {
-	prometheus := &PrometheusConfig{}
+	prometheus := &Prometheus{}
 	s.ValidateFail(t, prometheus)
 }
 
-func TestInitPrometheusClientOK(t *testing.T) {
+func TestInitPrometheusOK(t *testing.T) {
 	config := PrometheusConfig{
 		Url: "https://prometheus.example.com",
 	}
-	client := &PrometheusClient{}
-	err := client.Init(config)
+	prometheus := &Prometheus{
+		PrometheusConfig: config,
+	}
+	err := prometheus.Init()
 	if err != nil {
 		t.Errorf("Error: %s", err)
 	}

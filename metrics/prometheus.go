@@ -1,4 +1,4 @@
-package providers
+package metrics
 
 import (
 	"context"
@@ -13,54 +13,55 @@ import (
 )
 
 type PrometheusConfig struct {
-	Url   string
+	Url string
+	// TODO: Use StringFromEnv once DBP-363 is merged
 	Token string
 }
 
-func (p PrometheusConfig) Validate() error {
-	if p.Url == "" {
+type Prometheus struct {
+	PrometheusConfig PrometheusConfig `yaml:"prometheus_config"`
+	API              v1.API           `yaml:"-"`
+}
+
+func (p Prometheus) Validate() error {
+	if p.PrometheusConfig.Url == "" {
 		return fmt.Errorf("url is empty")
 	}
 	return nil
 }
 
-type PrometheusClient struct {
-	Client api.Client
-	API    v1.API
-}
-
-func (c *PrometheusClient) Init(prometheusConfig PrometheusConfig) error {
+func (p *Prometheus) Init() error {
 	var err error = nil
 	var rt http.RoundTripper = api.DefaultRoundTripper
-	if prometheusConfig.Token != "" {
-		rt = config.NewAuthorizationCredentialsRoundTripper("Bearer", config.Secret(prometheusConfig.Token), api.DefaultRoundTripper)
+	if p.PrometheusConfig.Token != "" {
+		rt = config.NewAuthorizationCredentialsRoundTripper("Bearer", config.Secret(p.PrometheusConfig.Token), api.DefaultRoundTripper)
 	}
-	c.Client, err = api.NewClient(api.Config{
-		Address:      prometheusConfig.Url,
+	client, err := api.NewClient(api.Config{
+		Address:      p.PrometheusConfig.Url,
 		RoundTripper: rt,
 	})
 	if err != nil {
 		return err
 	}
-	c.API = v1.NewAPI(c.Client)
+	p.API = v1.NewAPI(client)
 	return nil
 }
 
-func (c *PrometheusClient) QueryServerCPUUsage(serverLabels string) (float64, error) {
+func (p *Prometheus) QueryServerCPUUsage(serverLabels string) (float64, error) {
 	// TODO: Move the queries to config ?
 	cpuUsageQuery := fmt.Sprintf("avg without (mode,cpu) (1 - rate(node_cpu_seconds_total{mode=\"idle\",%s}[30s]))", serverLabels)
-	return c.Query(cpuUsageQuery)
+	return p.Query(cpuUsageQuery)
 }
 
-func (c *PrometheusClient) QueryServerMemoryUsage(serverLabels string) (float64, error) {
+func (p *Prometheus) QueryServerMemoryUsage(serverLabels string) (float64, error) {
 	memoryUsageQuery := fmt.Sprintf("(node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes) / node_memory_MemTotal_bytes{%s}", serverLabels)
-	return c.Query(memoryUsageQuery)
+	return p.Query(memoryUsageQuery)
 }
 
-func (c *PrometheusClient) Query(query string) (float64, error) {
+func (p *Prometheus) Query(query string) (float64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	result, warnings, err := c.API.Query(ctx, query, time.Now(), v1.WithTimeout(5*time.Second))
+	result, warnings, err := p.API.Query(ctx, query, time.Now(), v1.WithTimeout(5*time.Second))
 	if err != nil {
 		return 0, err
 	}
