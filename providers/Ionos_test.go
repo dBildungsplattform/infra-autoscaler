@@ -16,9 +16,6 @@ func TestValidateIonosProviderOK(t *testing.T) {
 					ServerNameRegex: "server-name-regex",
 				},
 			},
-			PrometheusConfig: PrometheusConfig{
-				Url: "url",
-			},
 		},
 	}
 	s.ValidatePass(t, cloudProvider)
