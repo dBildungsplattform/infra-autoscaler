@@ -26,17 +26,6 @@ func InitApp(configPath string) (*ScalerApp, error) {
 		return nil, fmt.Errorf("error while loading app config: %s", err)
 	}
 
-<<<<<<< HEAD
-	metrics, err := initMetrics(&app.MetricsType, configFile)
-	if err != nil {
-		return nil, fmt.Errorf("error while initializing metrics: %s", err)
-	}
-	return &ScalerApp{
-		appDefinition: app,
-		service:       initService(&app.ServiceType, configFile),
-		provider:      initProvider(&app.ProviderType, configFile),
-		metrics:       metrics,
-=======
 	service, err := initService(&app.ServiceType, configFile)
 	if err != nil {
 		return nil, fmt.Errorf("error while initializing service: %s", err)
@@ -46,11 +35,17 @@ func InitApp(configPath string) (*ScalerApp, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error while initializing provider: %s", err)
 	}
+
+	metrics, err := initMetrics(&app.MetricsType, configFile)
+	if err != nil {
+		return nil, fmt.Errorf("error while initializing metrics: %s", err)
+	}
+
 	return &ScalerApp{
 		appDefinition: app,
 		service:       service,
 		provider:      provider,
->>>>>>> main
+		metrics:       metrics,
 	}, nil
 }
 
