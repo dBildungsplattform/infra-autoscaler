@@ -9,6 +9,9 @@ func main() {
 	configPath := flag.String("config", "config/scaler_config.yml", "path to config file")
 	flag.Parse()
 
-	app := c.InitApp(*configPath)
+	app, err := c.InitApp(*configPath)
+	if err != nil {
+		panic(err)
+	}
 	app.Scale()
 }
