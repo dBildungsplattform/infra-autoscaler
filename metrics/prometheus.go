@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/prometheus/client_golang/api"
@@ -18,6 +19,9 @@ type PrometheusConfig struct {
 	Token string
 }
 
+// TODO: Move the timeout to config ?
+var timeout = 5 * time.Second
+
 type Prometheus struct {
 	PrometheusConfig PrometheusConfig `yaml:"prometheus_config"`
 	API              v1.API           `yaml:"-"`
@@ -26,6 +30,9 @@ type Prometheus struct {
 func (p Prometheus) Validate() error {
 	if p.PrometheusConfig.Url == "" {
 		return fmt.Errorf("url is empty")
+	}
+	if _, err := url.ParseRequestURI(p.PrometheusConfig.Url); err != nil {
+		return fmt.Errorf("url is invalid: %v", err)
 	}
 	return nil
 }
@@ -47,29 +54,28 @@ func (p *Prometheus) Init() error {
 	return nil
 }
 
-func (p *Prometheus) QueryServerCPUUsage(serverLabels string) (float64, error) {
+func (p *Prometheus) QueryServerCPUUsage(serverLabels string) string {
 	// TODO: Move the queries to config ?
 	cpuUsageQuery := fmt.Sprintf("avg without (mode,cpu) (1 - rate(node_cpu_seconds_total{mode=\"idle\",%s}[30s]))", serverLabels)
-	return p.Query(cpuUsageQuery)
+	return cpuUsageQuery
 }
 
-func (p *Prometheus) QueryServerMemoryUsage(serverLabels string) (float64, error) {
+func (p *Prometheus) QueryServerMemoryUsage(serverLabels string) string {
 	memoryUsageQuery := fmt.Sprintf("(node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes) / node_memory_MemTotal_bytes{%s}", serverLabels)
-	return p.Query(memoryUsageQuery)
+	return memoryUsageQuery
 }
 
 func (p *Prometheus) Query(query string) (float64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*timeout)
 	defer cancel()
-	result, warnings, err := p.API.Query(ctx, query, time.Now(), v1.WithTimeout(5*time.Second))
+	result, warnings, err := p.API.Query(ctx, query, time.Now(), v1.WithTimeout(timeout))
 	if err != nil {
 		return 0, err
 	}
 	if len(warnings) > 0 {
 		fmt.Printf("Warnings: %v\n", warnings)
 	}
-	switch result.Type() {
-	case model.ValVector:
+	if result.Type() == model.ValScalar {
 		vector := result.(model.Vector)
 		if len(vector) == 0 {
 			return 0, fmt.Errorf("no data found")
@@ -79,7 +85,7 @@ func (p *Prometheus) Query(query string) (float64, error) {
 			fmt.Printf("Unexpected vector length: %v\n", len(vector))
 		}
 		return float64(vector[0].Value), nil
-	default:
+	} else {
 		return 0, fmt.Errorf("unexpected type: %v", result.Type())
 	}
 }

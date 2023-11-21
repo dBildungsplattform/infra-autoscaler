@@ -11,16 +11,16 @@ type AppDefinition struct {
 
 func (a AppDefinition) Validate() error {
 	if a.Name == "" {
-		return fmt.Errorf("ServiceDefinition.Name is empty")
+		return fmt.Errorf("AppDefinition.Name is empty")
 	}
 	if a.ServiceType == "" {
-		return fmt.Errorf("ServiceDefinition.ServiceType is empty")
+		return fmt.Errorf("AppDefinition.ServiceType is empty")
 	}
 	if a.ProviderType == "" {
-		return fmt.Errorf("ServiceDefinition.ProviderType is empty")
+		return fmt.Errorf("AppDefinition.ProviderType is empty")
 	}
 	if a.MetricsType == "" {
-		return fmt.Errorf("ServiceDefinition.MetricsType is empty")
+		return fmt.Errorf("AppDefinition.MetricsType is empty")
 	}
 	return nil
 }
