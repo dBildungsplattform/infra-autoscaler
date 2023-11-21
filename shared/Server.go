@@ -5,6 +5,13 @@ import (
 	"regexp"
 )
 
+type Server struct {
+	DatacenterId string
+	ServerId     string
+	ServerCpu    float64
+	ServerRam    float64
+}
+
 type ServerSource struct {
 	Static  *ServerStaticSource  `yaml:"static"`
 	Dynamic *ServerDynamicSource `yaml:"dynamic"`

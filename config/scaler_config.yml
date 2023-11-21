@@ -7,7 +7,9 @@ ionos_config:
   password: $IONOS_PASSWORD
   server_source:
     dynamic:
-      datacenter_ids: [UUID]
+      datacenter_ids: 
+        - "b760e735-975c-4a8c-b1f3-b0d9b18b82d6" # dbpinfra-dev-bbb
+        - "638a3977-d5f2-4649-8ab5-d4b586d8c357" # dbpinfra-dev-bbb2
       server_name_regex: ".*"
 bbb_config:
   resources:

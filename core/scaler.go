@@ -18,13 +18,15 @@ type ScalerApp struct {
 func InitApp(configPath string) (*ScalerApp, error) {
 	configFile, err := s.OpenConfig(configPath)
 	if err != nil {
-		panic(err)
-	}
-	app, err := s.LoadConfig[s.AppDefinition](configFile)
-	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("error while opening config file: %s", err)
 	}
 
+	app, err := s.LoadConfig[s.AppDefinition](configFile)
+	if err != nil {
+		return nil, fmt.Errorf("error while loading app config: %s", err)
+	}
+
+<<<<<<< HEAD
 	metrics, err := initMetrics(&app.MetricsType, configFile)
 	if err != nil {
 		return nil, fmt.Errorf("error while initializing metrics: %s", err)
@@ -34,40 +36,61 @@ func InitApp(configPath string) (*ScalerApp, error) {
 		service:       initService(&app.ServiceType, configFile),
 		provider:      initProvider(&app.ProviderType, configFile),
 		metrics:       metrics,
+=======
+	service, err := initService(&app.ServiceType, configFile)
+	if err != nil {
+		return nil, fmt.Errorf("error while initializing service: %s", err)
+	}
+
+	provider, err := initProvider(&app.ProviderType, configFile)
+	if err != nil {
+		return nil, fmt.Errorf("error while initializing provider: %s", err)
+	}
+	return &ScalerApp{
+		appDefinition: app,
+		service:       service,
+		provider:      provider,
+>>>>>>> main
 	}, nil
 }
 
-func initService(t *s.ServiceType, configFile []byte) *s.Service {
+func initService(t *s.ServiceType, configFile []byte) (*s.Service, error) {
 	switch *t {
 	case s.BBB:
 		bbb, err := s.LoadConfig[services.BBBService](configFile)
 		if err != nil {
-			panic(err)
+			return nil, fmt.Errorf("error while loading BBB config: %s", err)
 		}
 		service := s.Service(bbb)
-		return &service
+		return &service, nil
 	case s.Postgres:
 		postgres, err := s.LoadConfig[services.PostgresService](configFile)
 		if err != nil {
-			panic(err)
+			return nil, fmt.Errorf("error while loading postgres config: %s", err)
 		}
 		service := s.Service(postgres)
-		return &service
+		return &service, nil
 	}
-	return nil // TODO: return error
+	return nil, fmt.Errorf("unknown service type: %s", *t)
 }
 
-func initProvider(t *s.ProviderType, configFile []byte) *s.Provider {
+func initProvider(t *s.ProviderType, configFile []byte) (*s.Provider, error) {
 	switch *t {
 	case s.Ionos:
-		ionos, err := s.LoadConfig[providers.Ionos](configFile)
-		if err != nil {
-			panic(err)
+		ionos, load_err := s.LoadConfig[providers.Ionos](configFile)
+		if load_err != nil {
+			return nil, fmt.Errorf("error while loading ionos config: %s", load_err)
 		}
+
+		init_err := ionos.Init()
+		if init_err != nil {
+			return nil, fmt.Errorf("error while initializing ionos: %s", init_err)
+		}
+
 		provider := s.Provider(ionos)
-		return &provider
+		return &provider, nil
 	}
-	return nil // TODO: return error
+	return nil, fmt.Errorf("unknown provider type: %s", *t)
 }
 
 func initMetrics(t *s.MetricsType, configFile []byte) (*s.Metrics, error) {
@@ -87,9 +110,9 @@ func initMetrics(t *s.MetricsType, configFile []byte) (*s.Metrics, error) {
 }
 
 func (sc *ScalerApp) Scale() {
-	fmt.Printf("App: %+v \n", sc.appDefinition)
-	fmt.Printf("Service: %+v \n", *sc.service)
-	fmt.Printf("Provider: %+v \n", *sc.provider)
-	fmt.Printf("Metrics: %+v \n", *sc.metrics)
-	panic("not implemented")
+	servers, err := (*sc.provider).GetServers(1)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Servers: %+v \n", servers)
 }

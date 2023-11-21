@@ -4,9 +4,8 @@ import "fmt"
 
 /*** Provider definition ***/
 type Provider interface {
-	Get_login_id() string
-	Get_login_secret() string
 	Validate() error
+	GetServers(depth int) ([]Server, error)
 }
 
 type ProviderType string
