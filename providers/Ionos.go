@@ -3,6 +3,7 @@ package providers
 import (
 	"context"
 	"fmt"
+	"regexp"
 	s "scaler/shared"
 
 	ic "github.com/ionos-cloud/sdk-go/v6"
@@ -30,22 +31,47 @@ func (i *Ionos) Init() error {
 
 func (i Ionos) GetServers(depth int) ([]s.Server, error) {
 	var servers []s.Server
-	for _, datacenterId := range i.Config.ServerSource.Dynamic.DatacenterIds {
-		dc_servers, _, err := i.Api.ServersApi.DatacentersServersGet(context.Background(), datacenterId).Depth(int32(depth)).Execute()
-		if err != nil {
-			return nil, fmt.Errorf("error while getting servers: %s", err)
-		}
-		for _, dc_server := range *dc_servers.Items {
-			server := s.Server{
-				DatacenterId: datacenterId,
-				ServerId:     *dc_server.Id,
-				ServerCpu:    float64(*dc_server.Properties.Cores),
-				ServerRam:    float64(*dc_server.Properties.Ram),
-			}
-			servers = append(servers, server)
-		}
+
+	if i.Config.ServerSource.Static != nil {
+		getServersStatic(&servers, i)
+	} else if i.Config.ServerSource.Dynamic != nil {
+		getServersDynamic(&servers, i, depth)
 	}
 	return servers, nil
+}
+
+func getServersStatic(servers *[]s.Server, i Ionos) {
+	for _, serverSource := range *i.Config.ServerSource.Static {
+		dcServer, _, err := i.Api.ServersApi.DatacentersServersFindById(context.Background(), serverSource.DatacenterId, serverSource.ServerId).Execute()
+		if err != nil {
+			fmt.Printf("error while getting servers: %s", err)
+		}
+		*servers = append(*servers, s.Server{
+			DatacenterId: serverSource.DatacenterId,
+			ServerId:     *dcServer.Id,
+			ServerCpu:    float64(*dcServer.Properties.Cores),
+			ServerRam:    float64(*dcServer.Properties.Ram),
+		})
+	}
+}
+
+func getServersDynamic(servers *[]s.Server, i Ionos, depth int) {
+	for _, datacenterId := range i.Config.ServerSource.Dynamic.DatacenterIds {
+		dcServers, _, err := i.Api.ServersApi.DatacentersServersGet(context.Background(), datacenterId).Depth(int32(depth)).Execute()
+		if err != nil {
+			fmt.Printf("error while getting servers: %s", err)
+		}
+		for _, dcServer := range *dcServers.Items {
+			if match, _ := regexp.MatchString(i.Config.ServerSource.Dynamic.ServerNameRegex, *dcServer.Properties.Name); match {
+				*servers = append(*servers, s.Server{
+					DatacenterId: datacenterId,
+					ServerId:     *dcServer.Id,
+					ServerCpu:    float64(*dcServer.Properties.Cores),
+					ServerRam:    float64(*dcServer.Properties.Ram),
+				})
+			}
+		}
+	}
 }
 
 func (i Ionos) Validate() error {
