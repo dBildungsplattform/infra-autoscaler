@@ -29,8 +29,9 @@ type BBBServiceConfig struct {
 	ApiToken         string      `yaml:"api_token"`
 }
 
+// BBBGetMeetingsResponseXML is the XML response from the BBB API when calling getMeetings
 // We only keep the fields we need from the response
-type BBBMeetingsResponseXML struct {
+type BBBGetMeetingsResponseXML struct {
 	XMLName    xml.Name `xml:"response"`
 	Returncode string   `xml:"returncode"`
 	MessageKey string   `xml:"messageKey"`
@@ -72,19 +73,7 @@ func doBBBAPICall(serverUrl, endpoint, parameters, apiToken string) ([]byte, err
 	return body, nil
 }
 
-func parseGetParticipantsCountResponse(responseBody []byte) (*BBBMeetingsResponseXML, error) {
-	var meetingsResponse BBBMeetingsResponseXML
-	err := xml.Unmarshal(responseBody, &meetingsResponse)
-	if err != nil {
-		return nil, err
-	}
-	if meetingsResponse.Returncode != "SUCCESS" {
-		return nil, fmt.Errorf("BBB API returned error: %s - %s", meetingsResponse.MessageKey, meetingsResponse.Message)
-	}
-	return &meetingsResponse, nil
-}
-
-func countParticipants(meetingsResponse *BBBMeetingsResponseXML) int {
+func countParticipants(meetingsResponse *BBBGetMeetingsResponseXML) int {
 	count := 0
 	for _, meeting := range meetingsResponse.Meetings.Meeting {
 		count += meeting.ParticipantCount
@@ -92,12 +81,27 @@ func countParticipants(meetingsResponse *BBBMeetingsResponseXML) int {
 	return count
 }
 
-func (bbb *BBBService) GetParticipantsCount(serverUrl string) (int, error) {
-	body, err := doBBBAPICall(serverUrl, "getMeetings", "", bbb.Config.ApiToken)
+func parseBBBGetMeetingsResponseXML(xmlRaw []byte) (*BBBGetMeetingsResponseXML, error) {
+	xmlParsed, err := s.ParseXML[BBBGetMeetingsResponseXML](xmlRaw)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	meetingsResponse, err := parseGetParticipantsCountResponse(body)
+	if xmlParsed.Returncode != "SUCCESS" {
+		return nil, fmt.Errorf("BBB API returned error: %s - %s", xmlParsed.MessageKey, xmlParsed.Message)
+	}
+	return xmlParsed, nil
+}
+
+func getMeetings(serverUrl, apiToken string) (*BBBGetMeetingsResponseXML, error) {
+	body, err := doBBBAPICall(serverUrl, "getMeetings", "", apiToken)
+	if err != nil {
+		return nil, err
+	}
+	return parseBBBGetMeetingsResponseXML(body)
+}
+
+func (bbb *BBBService) CountParticipants(serverUrl string) (int, error) {
+	meetingsResponse, err := getMeetings(serverUrl, bbb.Config.ApiToken)
 	if err != nil {
 		return 0, err
 	}

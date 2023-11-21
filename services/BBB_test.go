@@ -61,7 +61,7 @@ func TestParseGetParticipantsCountResponseOK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to open file: %v", err)
 	}
-	_, err = parseGetParticipantsCountResponse(responseBytes)
+	_, err = parseBBBGetMeetingsResponseXML(responseBytes)
 	if err != nil {
 		t.Fatalf("Failed to parse response: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestParseGetParticipantsCountResponseNotOK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to open file: %v", err)
 	}
-	_, err = parseGetParticipantsCountResponse(responseBytes)
+	_, err = parseBBBGetMeetingsResponseXML(responseBytes)
 	if err == nil {
 		t.Fatalf("Expected error but got nil")
 	}
@@ -83,7 +83,7 @@ func TestCountParticipants(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to open file: %v", err)
 	}
-	response, err := parseGetParticipantsCountResponse(responseBytes)
+	response, err := parseBBBGetMeetingsResponseXML(responseBytes)
 	if err != nil {
 		t.Fatalf("Failed to parse response: %v", err)
 	}
