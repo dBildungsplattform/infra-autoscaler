@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	s "scaler/shared"
 	"time"
 
 	"github.com/prometheus/client_golang/api"
@@ -16,7 +17,7 @@ import (
 type PrometheusConfig struct {
 	Url string
 	// TODO: Use StringFromEnv once DBP-363 is merged
-	Token string
+	Token s.StringFromEnv `yaml:"token"`
 }
 
 // TODO: Move the timeout to config ?
