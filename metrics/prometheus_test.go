@@ -8,7 +8,7 @@ import (
 func TestValidatePrometheusOK(t *testing.T) {
 	prometheus := &Prometheus{
 		PrometheusConfig: PrometheusConfig{
-			Url: "url",
+			Url: "https://prometheus.example.com",
 		},
 	}
 	s.ValidatePass(t, prometheus)
@@ -16,6 +16,20 @@ func TestValidatePrometheusOK(t *testing.T) {
 
 func TestValidatePrometheusConfigNotOK(t *testing.T) {
 	prometheus := &Prometheus{}
+	s.ValidateFail(t, prometheus)
+}
+
+func TestValidatePrometheusConfigBadUrl(t *testing.T) {
+	prometheus := &Prometheus{
+		PrometheusConfig: PrometheusConfig{
+			Url: "not a url",
+		},
+	}
+	s.ValidateFail(t, prometheus)
+	// Missing scheme
+	prometheus.PrometheusConfig.Url = "prometheus.example.com"
+	s.ValidateFail(t, prometheus)
+	prometheus.PrometheusConfig.Url = "/prometheus.example.com"
 	s.ValidateFail(t, prometheus)
 }
 

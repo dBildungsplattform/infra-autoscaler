@@ -31,8 +31,15 @@ func (p Prometheus) Validate() error {
 	if p.PrometheusConfig.Url == "" {
 		return fmt.Errorf("url is empty")
 	}
-	if _, err := url.ParseRequestURI(p.PrometheusConfig.Url); err != nil {
+	urlParsed, err := url.Parse(p.PrometheusConfig.Url)
+	if err != nil {
 		return fmt.Errorf("url is invalid: %v", err)
+	}
+	if urlParsed.Scheme != "http" && urlParsed.Scheme != "https" {
+		return fmt.Errorf("url scheme is invalid: %s", urlParsed.Scheme)
+	}
+	if urlParsed.Host == "" {
+		return fmt.Errorf("url host is empty")
 	}
 	return nil
 }
@@ -81,7 +88,8 @@ func (p *Prometheus) Query(query string) (float64, error) {
 			return 0, fmt.Errorf("no data found")
 		}
 		if len(vector) != 1 {
-			// TODO: Should duplicate metrics trigger an error?
+			// Duplicate metrics can occur if Prometheus has multiple jobs with the same targets
+			// This is not a scaler error but we should log it
 			fmt.Printf("Unexpected vector length: %v\n", len(vector))
 		}
 		return float64(vector[0].Value), nil
