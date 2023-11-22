@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"encoding/xml"
 	"fmt"
 	"os"
 	"regexp"
@@ -54,4 +55,13 @@ func (s *StringFromEnv) UnmarshalYAML(node *yaml.Node) error {
 		*s = StringFromEnv(envVal)
 	}
 	return nil
+}
+
+func ParseXML[T any](xmlRaw []byte) (*T, error) {
+	var xmlParsed T
+	err := xml.Unmarshal(xmlRaw, &xmlParsed)
+	if err != nil {
+		return nil, err
+	}
+	return &xmlParsed, nil
 }
