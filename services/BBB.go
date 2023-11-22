@@ -24,9 +24,9 @@ func (bbb BBBServiceState) Get_name() string {
 }
 
 type BBBServiceConfig struct {
-	CycleTimeSeconds int         `yaml:"cycle_time_seconds"`
-	Resources        s.Resources `yaml:"resources"`
-	ApiToken         string      `yaml:"api_token"`
+	CycleTimeSeconds int             `yaml:"cycle_time_seconds"`
+	Resources        s.Resources     `yaml:"resources"`
+	ApiToken         s.StringFromEnv `yaml:"api_token"`
 }
 
 // BBBGetMeetingsResponseXML is the XML response from the BBB API when calling getMeetings
