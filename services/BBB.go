@@ -100,7 +100,7 @@ func getMeetings(serverUrl, apiToken string) (*BBBGetMeetingsResponseXML, error)
 	return parseBBBGetMeetingsResponseXML(body)
 }
 
-func (bbb *BBBService) CountParticipants(serverUrl string) (int, error) {
+func (bbb *BBBService) GetParticipantsCount(serverUrl string) (int, error) {
 	meetingsResponse, err := getMeetings(serverUrl, bbb.Config.ApiToken)
 	if err != nil {
 		return 0, err
