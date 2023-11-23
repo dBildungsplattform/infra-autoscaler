@@ -7,9 +7,7 @@ ionos_config:
   password: $IONOS_PASSWORD
   server_source:
     dynamic:
-      datacenter_ids: 
-        - "b760e735-975c-4a8c-b1f3-b0d9b18b82d6" # dbpinfra-dev-bbb
-        - "638a3977-d5f2-4649-8ab5-d4b586d8c357" # dbpinfra-dev-bbb2
+      datacenter_ids: [UUID]
       server_name_regex: ".*"
 bbb_config:
   resources:
@@ -24,5 +22,5 @@ bbb_config:
   cycle_time_seconds: 60
   api_token: $BBB_API_TOKEN
 prometheus_config:
-  url: https://grafana.dbildungsplattform.de
+  url: https://grafana.example.com/api/datasources/proxy/uid/<uid>/
   token: $GRAFANA_TOKEN
