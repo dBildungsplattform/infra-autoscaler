@@ -1,0 +1,66 @@
+<response>
+<returncode>SUCCESS</returncode>
+<meetings>
+<meeting>
+<meetingName>Meeting 1</meetingName>
+<meetingID>1234</meetingID>
+<internalMeetingID>1234-5678</internalMeetingID>
+<createTime>1700486011144</createTime>
+<createDate>Mon Nov 20 13:13:31 UTC 2023</createDate>
+<voiceBridge>1234</voiceBridge>
+<attendeePW>apw</attendeePW>
+<moderatorPW>mpw</moderatorPW>
+<running>true</running>
+<duration>0</duration>
+<hasUserJoined>true</hasUserJoined>
+<recording>false</recording>
+<hasBeenForciblyEnded>false</hasBeenForciblyEnded>
+<startTime>1700486011150</startTime>
+<endTime>0</endTime>
+<participantCount>1</participantCount>
+<listenerCount>0</listenerCount>
+<voiceParticipantCount>0</voiceParticipantCount>
+<videoCount>0</videoCount>
+<maxUsers>0</maxUsers>
+<moderatorCount>1</moderatorCount>
+<attendees>
+<attendee>
+<userID>user1</userID>
+<fullName>User 1</fullName>
+<role>MODERATOR</role>
+<isPresenter>true</isPresenter>
+<isListeningOnly>false</isListeningOnly>
+<hasJoinedVoice>false</hasJoinedVoice>
+<hasVideo>false</hasVideo>
+<clientType>HTML5</clientType>
+</attendee>
+</attendees>
+<isBreakout>false</isBreakout>
+</meeting>
+<meeting>
+<meetingName>Meeting 2</meetingName>
+<meetingID>5678</meetingID>
+<internalMeetingID>5678-9012</internalMeetingID>
+<createTime>1700491407573</createTime>
+<createDate>Mon Nov 20 14:43:27 UTC 2023</createDate>
+<voiceBridge>5678</voiceBridge>
+<attendeePW>apw</attendeePW>
+<moderatorPW>mpw</moderatorPW>
+<running>false</running>
+<duration>0</duration>
+<hasUserJoined>false</hasUserJoined>
+<recording>false</recording>
+<hasBeenForciblyEnded>false</hasBeenForciblyEnded>
+<startTime>1700491407577</startTime>
+<endTime>0</endTime>
+<participantCount>1</participantCount>
+<listenerCount>0</listenerCount>
+<voiceParticipantCount>0</voiceParticipantCount>
+<videoCount>0</videoCount>
+<maxUsers>0</maxUsers>
+<moderatorCount>0</moderatorCount>
+<attendees> </attendees>
+<isBreakout>false</isBreakout>
+</meeting>
+</meetings>
+</response>
