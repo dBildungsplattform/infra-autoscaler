@@ -3,6 +3,7 @@ package shared
 /*** Service definition ***/
 type Service interface {
 	Validate() error
+	Init() error
 }
 
 type ServiceState interface {

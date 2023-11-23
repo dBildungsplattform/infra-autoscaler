@@ -21,6 +21,10 @@ func (postgres PostgresServiceState) Get_name() string {
 type PostgresServiceConfig struct {
 }
 
+func (postgres PostgresService) Init() error {
+	return registerMetrics("postgres")
+}
+
 func (postgres *PostgresService) Get_state() s.ServiceState {
 	return postgres.state
 }

@@ -56,6 +56,10 @@ func initService(t *s.ServiceType, configFile []byte) (*s.Service, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error while loading BBB config: %s", err)
 		}
+		init_err := bbb.Init()
+		if init_err != nil {
+			return nil, fmt.Errorf("error while initializing BBB: %s", init_err)
+		}
 		service := s.Service(bbb)
 		return &service, nil
 	case s.Postgres:
