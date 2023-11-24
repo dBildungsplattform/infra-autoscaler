@@ -14,19 +14,27 @@ type PostgresServiceState struct {
 	Name string
 }
 
-func (postgres PostgresServiceState) Get_name() string {
+func (postgres PostgresServiceState) GetName() string {
 	return postgres.Name
 }
 
 type PostgresServiceConfig struct {
 }
 
-func (postgres *PostgresService) Get_state() s.ServiceState {
+func (postgres *PostgresService) GetState() s.ServiceState {
 	return postgres.state
 }
 
-func (postgres *PostgresService) Get_config() PostgresServiceConfig {
+func (postgres *PostgresService) GetConfig() PostgresServiceConfig {
 	return postgres.config
+}
+
+func (postgres PostgresService) GetResources() s.Resources {
+	return s.Resources{} // TODO: implement
+}
+
+func (postgres PostgresService) ShouldScale(cores int, memory int) (s.ScaleResource, error) {
+	return s.ScaleResource{}, nil // TODO: implement
 }
 
 func (service PostgresService) Validate() error {

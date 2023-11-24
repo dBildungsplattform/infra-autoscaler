@@ -3,14 +3,16 @@ package shared
 /*** Service definition ***/
 type Service interface {
 	Validate() error
+	GetResources() Resources
+	ShouldScale(cores int, memory int) (ScaleResource, error)
 }
 
 type ServiceState interface {
-	Get_name() string
+	GetName() string
 }
 
 type ServiceConfig interface {
-	Get_provider_type() ProviderType
+	GetProviderType() ProviderType
 }
 
 type ServiceType string

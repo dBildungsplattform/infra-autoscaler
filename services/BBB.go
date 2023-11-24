@@ -14,7 +14,7 @@ type BBBServiceState struct {
 	Name string
 }
 
-func (bbb BBBServiceState) Get_name() string {
+func (bbb BBBServiceState) GetName() string {
 	return bbb.Name
 }
 
@@ -24,12 +24,59 @@ type BBBServiceConfig struct {
 	ApiToken         string      `yaml:"api_token"`
 }
 
-func (bbb *BBBService) Get_state() s.ServiceState {
+func (bbb *BBBService) GetState() s.ServiceState {
 	return bbb.State
 }
 
-func (bbb *BBBService) Get_config() BBBServiceConfig {
+func (bbb *BBBService) GetConfig() BBBServiceConfig {
 	return bbb.Config
+}
+
+func (bbb BBBService) GetResources() s.Resources {
+	return bbb.Config.Resources
+}
+
+func (bbb BBBService) ShouldScale(cores int, memory int) (s.ScaleResource, error) {
+	targetResource := s.ScaleResource{
+		Cpu: s.ScaleOp{
+			Direction: s.ScaleNone,
+			Amount:    0,
+		},
+		Mem: s.ScaleOp{
+			Direction: s.ScaleNone,
+			Amount:    0,
+		},
+	}
+
+	// Scaling cores
+	coresMaxThreshold := int(float32(bbb.Config.Resources.Cpu.MaxCores) * bbb.Config.Resources.Cpu.MaxUsage)
+	coresMinThreshold := int(float32(bbb.Config.Resources.Cpu.MinCores) * bbb.Config.Resources.Cpu.MinUsage)
+
+	if cores >= bbb.Config.Resources.Cpu.MinCores && cores <= coresMaxThreshold {
+		targetResource.Cpu.Direction = s.ScaleNone
+	}
+	if cores < bbb.Config.Resources.Cpu.MinCores || cores > coresMaxThreshold {
+		targetResource.Cpu.Direction = s.ScaleUp
+	}
+	if cores < coresMinThreshold {
+		targetResource.Cpu.Direction = s.ScaleDown
+	}
+
+	// Scaling memory
+	memoryMaxThreshold := int(float32(bbb.Config.Resources.Memory.MaxBytes) * bbb.Config.Resources.Memory.MaxUsage)
+	memoryMinThreshold := int(float32(bbb.Config.Resources.Memory.MinBytes) * bbb.Config.Resources.Memory.MinUsage)
+
+	if memory >= bbb.Config.Resources.Memory.MinBytes && memory <= memoryMaxThreshold {
+		targetResource.Mem.Direction = s.ScaleNone
+	}
+	if memory < bbb.Config.Resources.Memory.MinBytes || memory > memoryMaxThreshold {
+		targetResource.Mem.Direction = s.ScaleUp
+	}
+	if memory < memoryMinThreshold {
+		targetResource.Mem.Direction = s.ScaleDown
+	}
+
+	return targetResource, nil
 }
 
 func (service BBBService) Validate() error {

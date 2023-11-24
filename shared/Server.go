@@ -6,10 +6,11 @@ import (
 )
 
 type Server struct {
-	DatacenterId string
-	ServerId     string
-	ServerCpu    float64
-	ServerRam    float64
+	DatacenterId    string
+	ServerId        string
+	CpuArchitecture string
+	ServerCpu       int32
+	ServerRam       int32
 }
 
 type ServerSource struct {
