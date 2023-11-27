@@ -15,8 +15,7 @@ import (
 )
 
 type PrometheusConfig struct {
-	Url string
-	// TODO: Use StringFromEnv once DBP-363 is merged
+	Url   string
 	Token s.StringFromEnv `yaml:"token"`
 }
 
