@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 
 	"gopkg.in/yaml.v3"
 )
@@ -53,6 +54,32 @@ func (s *StringFromEnv) UnmarshalYAML(node *yaml.Node) error {
 			return fmt.Errorf("environment variable %s not set", env)
 		}
 		*s = StringFromEnv(envVal)
+	}
+	return nil
+}
+
+type IntFromEnv int
+
+// Could be made generic as TypeFromEnv[T any]
+func (i *IntFromEnv) UnmarshalYAML(node *yaml.Node) error {
+	var nodeVal string
+	err := node.Decode(&nodeVal)
+	if err != nil {
+		return err
+	}
+	env := envRegex.FindString(nodeVal)
+	if env == "" {
+		*i = IntFromEnv(0) // not an environment variable
+	} else {
+		envVal, bool := os.LookupEnv(env[1:]) // remove the "$" from the environment variable
+		if !bool {
+			return fmt.Errorf("environment variable %s not set", env)
+		}
+		intRepr, err := strconv.Atoi(envVal)
+		if err != nil {
+			return fmt.Errorf("environment variable %s is not an integer", env)
+		}
+		*i = IntFromEnv(intRepr)
 	}
 	return nil
 }

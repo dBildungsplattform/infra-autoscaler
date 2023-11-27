@@ -15,6 +15,12 @@ type ScalerApp struct {
 	metrics       *s.Metrics
 }
 
+// TODO: make these configurable
+var memIncrease int32 = 1
+var memDecrease int32 = 1
+var cpuIncrease int32 = 1
+var cpuDecrease int32 = 1
+
 func InitApp(configPath string) (*ScalerApp, error) {
 	configFile, err := s.OpenConfig(configPath)
 	if err != nil {
@@ -109,9 +115,36 @@ func initMetrics(t *s.MetricsType, configFile []byte) (*s.Metrics, error) {
 }
 
 func (sc *ScalerApp) Scale() {
+	var service s.Service = *sc.service
+
 	servers, err := (*sc.provider).GetServers(1)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Servers: %+v \n", servers)
+
+	for _, server := range servers {
+		targetResource, err := service.ShouldScale(int(server.ServerCpu), int(server.ServerRam))
+		if err != nil {
+			panic(err)
+		}
+
+		// Scale up
+		if targetResource.Cpu.Direction == s.ScaleUp {
+			targetResource.Cpu.Amount = server.ServerCpu + cpuIncrease
+		}
+		if targetResource.Mem.Direction == s.ScaleUp {
+			targetResource.Mem.Amount = server.ServerRam + memIncrease
+		}
+
+		// Scale down
+		if targetResource.Cpu.Direction == s.ScaleDown {
+			targetResource.Cpu.Amount = server.ServerCpu - cpuDecrease
+		}
+		if targetResource.Mem.Direction == s.ScaleDown {
+			targetResource.Mem.Amount = server.ServerRam - memDecrease
+		}
+
+		provider := *sc.provider
+		provider.SetServerResources(server, targetResource)
+	}
 }

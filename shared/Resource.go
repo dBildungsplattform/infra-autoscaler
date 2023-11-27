@@ -22,6 +22,24 @@ type MemoryResources struct {
 	MaxUsage float32 `yaml:"max_usage"`
 }
 
+type ScaleResource struct {
+	Cpu ScaleOp
+	Mem ScaleOp
+}
+
+type ScaleOp struct {
+	Direction ScaleDirection
+	Amount    int32
+}
+
+type ScaleDirection string
+
+const (
+	ScaleUp   = "up"
+	ScaleDown = "down"
+	ScaleNone = "none"
+)
+
 func (r Resources) Validate() error {
 	if cpu := r.Cpu; cpu != nil {
 		if err := cpu.Validate(); err != nil {

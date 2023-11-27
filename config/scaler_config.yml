@@ -1,10 +1,12 @@
 app_name: bbb-scaler
+stage: prod 
 service_type: BBB
 provider_type: Ionos
 metrics_type: Prometheus
 ionos_config:
   username: $IONOS_USERNAME
   password: $IONOS_PASSWORD
+  contract_id: $IONOS_CONTRACT_ID
   server_source:
     dynamic:
       datacenter_ids: [UUID]
@@ -13,10 +15,12 @@ bbb_config:
   resources:
     cpu:
       min_cores: 4
+      min_usage: 0.3
       max_cores: 16
       max_usage: 0.7
     memory:
       min_bytes: 12288
+      min_usage: 0.3
       max_bytes: 32768
       max_usage: 0.7
   cycle_time_seconds: 60

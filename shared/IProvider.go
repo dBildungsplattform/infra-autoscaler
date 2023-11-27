@@ -6,6 +6,7 @@ import "fmt"
 type Provider interface {
 	Validate() error
 	GetServers(depth int) ([]Server, error)
+	SetServerResources(server Server, targetRes ScaleResource) error
 }
 
 type ProviderType string
