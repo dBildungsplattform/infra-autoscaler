@@ -107,7 +107,7 @@ func getMeetings(serverUrl, apiToken string) (*BBBGetMeetingsResponseXML, error)
 func (bbb *BBBService) GetParticipantsCount(serverUrl string) (int, error) {
 	meetingsResponse, err := getMeetings(serverUrl, string(bbb.Config.ApiToken))
 	if err != nil {
-		errorsMetric.WithLabelValues("bbb").Inc()
+		errorsTotalCounter.Inc()
 		return 0, err
 	}
 	return countParticipants(meetingsResponse), nil
