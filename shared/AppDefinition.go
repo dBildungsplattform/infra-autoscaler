@@ -36,8 +36,8 @@ func (a AppDefinition) Validate() error {
 	if a.MetricsSourceType == "" {
 		return fmt.Errorf("AppDefinition.MetricsSourceType is empty")
 	}
-	if a.MetricsExporterPort < 0 {
-		return fmt.Errorf("AppDefinition.MetricsExporterPort is invalid")
+	if a.MetricsExporterPort < 0 || a.MetricsExporterPort > 65535 {
+		return fmt.Errorf("AppDefinition.MetricsExporterPort %d is invalid", a.MetricsExporterPort)
 	}
 	return nil
 }
