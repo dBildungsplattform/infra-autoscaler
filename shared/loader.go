@@ -69,7 +69,11 @@ func (i *IntFromEnv) UnmarshalYAML(node *yaml.Node) error {
 	}
 	env := envRegex.FindString(nodeVal)
 	if env == "" {
-		*i = IntFromEnv(0) // not an environment variable
+		intRepr, err := strconv.Atoi(nodeVal)
+		if err != nil {
+			return fmt.Errorf("%s is not an integer", nodeVal)
+		}
+		*i = IntFromEnv(intRepr) // not an environment variable
 	} else {
 		envVal, bool := os.LookupEnv(env[1:]) // remove the "$" from the environment variable
 		if !bool {

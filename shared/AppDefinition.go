@@ -3,11 +3,12 @@ package shared
 import "fmt"
 
 type AppDefinition struct {
-	Name              string            `yaml:"app_name"`
-	Stage             Stage             `yaml:"stage"`
-	ServiceType       ServiceType       `yaml:"service_type"`
-	ProviderType      ProviderType      `yaml:"provider_type"`
-	MetricsSourceType MetricsSourceType `yaml:"metrics_source_type"`
+	Name                string            `yaml:"app_name"`
+	Stage               Stage             `yaml:"stage"`
+	ServiceType         ServiceType       `yaml:"service_type"`
+	ProviderType        ProviderType      `yaml:"provider_type"`
+	MetricsSourceType   MetricsSourceType `yaml:"metrics_source_type"`
+	MetricsExporterPort IntFromEnv        `yaml:"metrics_exporter_port"`
 }
 
 type Stage string
@@ -34,6 +35,9 @@ func (a AppDefinition) Validate() error {
 	}
 	if a.MetricsSourceType == "" {
 		return fmt.Errorf("AppDefinition.MetricsSourceType is empty")
+	}
+	if a.MetricsExporterPort < 0 {
+		return fmt.Errorf("AppDefinition.MetricsExporterPort is invalid")
 	}
 	return nil
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	c "scaler/core"
 )
 
@@ -14,5 +15,5 @@ func main() {
 		panic(err)
 	}
 	go app.Scale()
-	c.ServeMetrics()
+	fmt.Println(app.ServeMetrics())
 }

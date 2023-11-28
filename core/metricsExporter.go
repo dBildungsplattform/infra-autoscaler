@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"net/http"
 	s "scaler/shared"
 
@@ -83,7 +84,13 @@ func (sc ScalerApp) calculateMetrics(servers []s.Server) {
 	}
 }
 
-func ServeMetrics() error {
+func (sc ScalerApp) ServeMetrics() error {
 	http.Handle("/metrics", promhttp.Handler())
-	return http.ListenAndServe(":8080", nil)
+	port := sc.appDefinition.MetricsExporterPort
+	fmt.Println(port)
+	if port == 0 {
+		port = 8080
+	}
+	portString := fmt.Sprint(":", port)
+	return http.ListenAndServe(portString, nil)
 }

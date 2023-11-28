@@ -28,3 +28,4 @@ bbb_config:
 prometheus_config:
   url: https://grafana.example.com/api/datasources/proxy/uid/<uid>/
   token: $GRAFANA_TOKEN
+metrics_exporter_port: 9100

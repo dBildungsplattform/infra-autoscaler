@@ -153,6 +153,7 @@ func (sc *ScalerApp) Scale() {
 
 		provider := *sc.provider
 		provider.SetServerResources(server, targetResource)
+		// Placeholder to have metrics
 		lastScaleTimeGauge.SetToCurrentTime()
 	}
 }
