@@ -2,7 +2,7 @@ app_name: bbb-scaler
 stage: prod 
 service_type: BBB
 provider_type: Ionos
-metrics_type: Prometheus
+metrics_source_type: Prometheus
 ionos_config:
   username: $IONOS_USERNAME
   password: $IONOS_PASSWORD
