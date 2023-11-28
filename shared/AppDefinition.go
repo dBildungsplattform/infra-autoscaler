@@ -3,11 +3,11 @@ package shared
 import "fmt"
 
 type AppDefinition struct {
-	Name         string       `yaml:"app_name"`
-	Stage        Stage        `yaml:"stage"`
-	ServiceType  ServiceType  `yaml:"service_type"`
-	ProviderType ProviderType `yaml:"provider_type"`
-	MetricsType  MetricsType  `yaml:"metrics_type"`
+	Name              string            `yaml:"app_name"`
+	Stage             Stage             `yaml:"stage"`
+	ServiceType       ServiceType       `yaml:"service_type"`
+	ProviderType      ProviderType      `yaml:"provider_type"`
+	MetricsSourceType MetricsSourceType `yaml:"metrics_source_type"`
 }
 
 type Stage string
@@ -32,8 +32,8 @@ func (a AppDefinition) Validate() error {
 	if a.ProviderType == "" {
 		return fmt.Errorf("AppDefinition.Type is empty")
 	}
-	if a.MetricsType == "" {
-		return fmt.Errorf("AppDefinition.MetricsType is empty")
+	if a.MetricsSourceType == "" {
+		return fmt.Errorf("AppDefinition.MetricsSourceType is empty")
 	}
 	return nil
 }

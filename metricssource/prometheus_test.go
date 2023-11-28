@@ -1,4 +1,4 @@
-package metrics
+package metricssource
 
 import (
 	s "scaler/shared"
