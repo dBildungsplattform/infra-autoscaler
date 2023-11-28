@@ -47,6 +47,8 @@ func InitApp(configPath string) (*ScalerApp, error) {
 		return nil, fmt.Errorf("error while initializing metrics: %s", err)
 	}
 
+	initMetricsExporter()
+
 	return &ScalerApp{
 		appDefinition: app,
 		service:       service,
@@ -117,12 +119,17 @@ func initMetricsSource(t *s.MetricsSourceType, configFile []byte) (*s.MetricsSou
 func (sc *ScalerApp) Scale() {
 	var service s.Service = *sc.service
 
+	cyclesCounter.Inc()
+
 	servers, err := (*sc.provider).GetServers(1)
 	if err != nil {
 		panic(err)
 	}
 
+	go sc.calculateMetrics(servers)
+
 	for _, server := range servers {
+
 		targetResource, err := service.ShouldScale(int(server.ServerCpu), int(server.ServerRam))
 		if err != nil {
 			panic(err)
@@ -146,5 +153,6 @@ func (sc *ScalerApp) Scale() {
 
 		provider := *sc.provider
 		provider.SetServerResources(server, targetResource)
+		lastScaleTimeGauge.SetToCurrentTime()
 	}
 }

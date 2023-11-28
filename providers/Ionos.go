@@ -33,16 +33,24 @@ func (i *Ionos) Init() error {
 	if err := validateAndLoadContract(i); err != nil {
 		return fmt.Errorf("error while validating contract: %s", err)
 	}
+	if err := initMetricsExporter("ionos"); err != nil {
+		return fmt.Errorf("error while registering metrics: %s", err)
+	}
 	return nil
 }
 
 func (i Ionos) GetServers(depth int) ([]s.Server, error) {
 	var servers []s.Server
+	var err error
 
 	if i.Config.ServerSource.Static != nil {
-		getServersStatic(&servers, i)
+		err = getServersStatic(&servers, i)
 	} else if i.Config.ServerSource.Dynamic != nil {
-		getServersDynamic(&servers, i, depth)
+		err = getServersDynamic(&servers, i, depth)
+	}
+	if err != nil {
+		errorsTotalCounter.Inc()
+		return nil, fmt.Errorf("error while getting servers: %s", err)
 	}
 	return servers, nil
 }
@@ -98,12 +106,14 @@ func (i Ionos) SetServerResources(server s.Server, targetRes s.ScaleResource) er
 	})
 	validServer := validateServer(targetServer, *i.Contract)
 	if !validServer {
+		errorsTotalCounter.Inc()
 		return fmt.Errorf("server is not valid")
 	}
 
 	fmt.Printf("targetServer: %+v \n", targetServer) // Check mode
 	//_, _, err = i.Api.ServersApi.DatacentersServersPut(context.TODO(), server.DatacenterId, server.ServerId).Server(targetServer).XContractNumber(int32(i.Config.ContractId)).Execute()
 	//if err != nil {
+	//	errorsTotalCounter.Inc()
 	//	return fmt.Errorf("error while setting server resources: %s", err)
 	//}
 	return nil

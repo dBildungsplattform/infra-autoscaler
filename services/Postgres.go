@@ -22,7 +22,7 @@ type PostgresServiceConfig struct {
 }
 
 func (postgres PostgresService) Init() error {
-	return registerMetrics("postgres")
+	return initMetricsExporter("postgres")
 }
 
 func (postgres *PostgresService) GetState() s.ServiceState {

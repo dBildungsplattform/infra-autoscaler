@@ -44,6 +44,9 @@ type BBBGetMeetingsResponseXML struct {
 }
 
 func (bbb BBBService) Init() error {
+	if err := initMetricsExporter("bbb"); err != nil {
+		return fmt.Errorf("error while registering metrics: %s", err)
+	}
 	return nil
 }
 
@@ -107,6 +110,7 @@ func getMeetings(serverUrl, apiToken string) (*BBBGetMeetingsResponseXML, error)
 func (bbb *BBBService) GetParticipantsCount(serverUrl string) (int, error) {
 	meetingsResponse, err := getMeetings(serverUrl, string(bbb.Config.ApiToken))
 	if err != nil {
+		errorsTotalCounter.Inc()
 		return 0, err
 	}
 	return countParticipants(meetingsResponse), nil

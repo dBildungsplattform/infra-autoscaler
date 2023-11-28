@@ -58,6 +58,9 @@ func (p *Prometheus) Init() error {
 		return err
 	}
 	p.API = v1.NewAPI(client)
+	if err := initMetricsExporter("prometheus"); err != nil {
+		return fmt.Errorf("error while registering metrics: %s", err)
+	}
 	return nil
 }
 
@@ -77,6 +80,7 @@ func (p *Prometheus) Query(query string) (float64, error) {
 	defer cancel()
 	result, warnings, err := p.API.Query(ctx, query, time.Now(), v1.WithTimeout(timeout))
 	if err != nil {
+		errorsTotalCounter.Inc()
 		return 0, err
 	}
 	if len(warnings) > 0 {
@@ -85,6 +89,7 @@ func (p *Prometheus) Query(query string) (float64, error) {
 	if result.Type() == model.ValScalar {
 		vector := result.(model.Vector)
 		if len(vector) == 0 {
+			errorsTotalCounter.Inc()
 			return 0, fmt.Errorf("no data found")
 		}
 		if len(vector) != 1 {
@@ -94,6 +99,7 @@ func (p *Prometheus) Query(query string) (float64, error) {
 		}
 		return float64(vector[0].Value), nil
 	} else {
+		errorsTotalCounter.Inc()
 		return 0, fmt.Errorf("unexpected type: %v", result.Type())
 	}
 }
