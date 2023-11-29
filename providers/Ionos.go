@@ -71,6 +71,7 @@ func getServersStatic(servers *[]s.Server, i Ionos) error {
 
 func getServersDynamic(servers *[]s.Server, i Ionos, depth int) error {
 	for _, datacenterId := range i.Config.ServerSource.Dynamic.DatacenterIds {
+		fmt.Println("Getting servers from datacenter: ", datacenterId)
 		dcServers, _, err := i.Api.ServersApi.DatacentersServersGet(context.TODO(), datacenterId).Depth(int32(depth)).XContractNumber(int32(i.Config.ContractId)).Execute()
 		if err != nil {
 			return fmt.Errorf("error while getting servers: %s", err)
