@@ -75,7 +75,7 @@ func (p *Prometheus) QueryServerMemoryUsage(serverLabels string) string {
 	return memoryUsageQuery
 }
 
-func (p *Prometheus) Query(query string) (float64, error) {
+func (p *Prometheus) Query(query string) (float32, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*timeout)
 	defer cancel()
 	result, warnings, err := p.API.Query(ctx, query, time.Now(), v1.WithTimeout(timeout))
@@ -97,9 +97,21 @@ func (p *Prometheus) Query(query string) (float64, error) {
 			// This is not a scaler error but we should log it
 			fmt.Printf("Unexpected vector length: %v\n", len(vector))
 		}
-		return float64(vector[0].Value), nil
+		return float32(vector[0].Value), nil
 	} else {
 		errorsTotalCounter.Inc()
 		return 0, fmt.Errorf("unexpected type: %v", result.Type())
 	}
+}
+
+func (p Prometheus) GetServerCpuUsage(serverName string) (float32, error) {
+	serverLabels := fmt.Sprintf("instance=~\"%s\"", serverName)
+	query := p.QueryServerCPUUsage(serverLabels)
+	return p.Query(query)
+}
+
+func (p Prometheus) GetServerMemoryUsage(serverName string) (float32, error) {
+	serverLabels := fmt.Sprintf("instance=~\"%s\"", serverName)
+	query := p.QueryServerMemoryUsage(serverLabels)
+	return p.Query(query)
 }

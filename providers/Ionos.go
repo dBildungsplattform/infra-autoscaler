@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	s "scaler/shared"
+	"time"
 
 	ic "github.com/ionos-cloud/sdk-go/v6"
 )
@@ -89,9 +90,13 @@ func addServer(servers *[]s.Server, dcServer ic.Server, datacenterId string) {
 	*servers = append(*servers, s.Server{
 		DatacenterId:    datacenterId,
 		ServerId:        *dcServer.Id,
+		ServerName:      *dcServer.Properties.Name,
 		CpuArchitecture: *dcServer.Properties.CpuFamily,
 		ServerCpu:       *dcServer.Properties.Cores,
 		ServerRam:       *dcServer.Properties.Ram,
+		ServerCpuUsage:  0,
+		ServerRamUsage:  0,
+		LastUpdated:     time.Now(),
 	})
 }
 

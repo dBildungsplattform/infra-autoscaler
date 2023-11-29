@@ -37,7 +37,7 @@ func (postgres PostgresService) GetResources() s.Resources {
 	return s.Resources{} // TODO: implement
 }
 
-func (postgres PostgresService) ShouldScale(cores int, memory int) (s.ScaleResource, error) {
+func (postgres PostgresService) ShouldScale(s.Server) (s.ScaleResource, error) {
 	return s.ScaleResource{}, nil // TODO: implement
 }
 

@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	s "scaler/shared"
 )
@@ -107,7 +108,7 @@ func getMeetings(serverUrl, apiToken string) (*BBBGetMeetingsResponseXML, error)
 	return parseBBBGetMeetingsResponseXML(body)
 }
 
-func (bbb *BBBService) GetParticipantsCount(serverUrl string) (int, error) {
+func (bbb BBBService) GetParticipantsCount(serverUrl string) (int, error) {
 	meetingsResponse, err := getMeetings(serverUrl, string(bbb.Config.ApiToken))
 	if err != nil {
 		errorsTotalCounter.Inc()
@@ -120,7 +121,7 @@ func (bbb BBBService) GetResources() s.Resources {
 	return bbb.Config.Resources
 }
 
-func (bbb BBBService) ShouldScale(cores int, memory int) (s.ScaleResource, error) {
+func (bbb BBBService) ShouldScale(server s.Server) (s.ScaleResource, error) {
 	targetResource := s.ScaleResource{
 		Cpu: s.ScaleOp{
 			Direction: s.ScaleNone,
@@ -132,32 +133,42 @@ func (bbb BBBService) ShouldScale(cores int, memory int) (s.ScaleResource, error
 		},
 	}
 
-	// Scaling cores
-	coresMaxThreshold := int(float32(bbb.Config.Resources.Cpu.MaxCores) * bbb.Config.Resources.Cpu.MaxUsage)
-	coresMinThreshold := int(float32(bbb.Config.Resources.Cpu.MinCores) * bbb.Config.Resources.Cpu.MinUsage)
+	participantsCount, err := bbb.GetParticipantsCount(server.ServerName)
+	if err != nil {
+		return targetResource, err
+	}
 
-	if cores >= bbb.Config.Resources.Cpu.MinCores && cores <= coresMaxThreshold {
+	// Scaling cores
+	cpuMaxUsageDelta := server.ServerCpuUsage - bbb.Config.Resources.Cpu.MaxUsage
+
+	if server.ServerCpu >= int32(bbb.Config.Resources.Cpu.MinCores) && cpuMaxUsageDelta <= 0 {
 		targetResource.Cpu.Direction = s.ScaleNone
 	}
-	if cores < bbb.Config.Resources.Cpu.MinCores || cores > coresMaxThreshold {
+	if server.ServerCpu < int32(bbb.Config.Resources.Cpu.MinCores) || cpuMaxUsageDelta > 0 {
 		targetResource.Cpu.Direction = s.ScaleUp
+		cpuInc := cpuMaxUsageDelta * float32(server.ServerCpu) / server.ServerCpuUsage
+		targetResource.Cpu.Amount = server.ServerCpu + int32(math.Ceil(float64(cpuInc)))
 	}
-	if cores < coresMinThreshold {
+
+	if participantsCount == 0 {
 		targetResource.Cpu.Direction = s.ScaleDown
+		targetResource.Cpu.Amount = int32(bbb.Config.Resources.Cpu.MinCores)
 	}
 
 	// Scaling memory
-	memoryMaxThreshold := int(float32(bbb.Config.Resources.Memory.MaxBytes) * bbb.Config.Resources.Memory.MaxUsage)
-	memoryMinThreshold := int(float32(bbb.Config.Resources.Memory.MinBytes) * bbb.Config.Resources.Memory.MinUsage)
+	memMaxUsageDelta := server.ServerRamUsage - bbb.Config.Resources.Memory.MaxUsage
 
-	if memory >= bbb.Config.Resources.Memory.MinBytes && memory <= memoryMaxThreshold {
+	if server.ServerRam >= int32(bbb.Config.Resources.Memory.MinBytes) && memMaxUsageDelta <= 0 {
 		targetResource.Mem.Direction = s.ScaleNone
 	}
-	if memory < bbb.Config.Resources.Memory.MinBytes || memory > memoryMaxThreshold {
+	if server.ServerRam < int32(bbb.Config.Resources.Memory.MinBytes) || memMaxUsageDelta > 0 {
 		targetResource.Mem.Direction = s.ScaleUp
+		memInc := memMaxUsageDelta * float32(server.ServerRam) / server.ServerRamUsage
+		targetResource.Mem.Amount = server.ServerRam + int32(math.Ceil(float64(memInc)))
 	}
-	if memory < memoryMinThreshold {
+	if participantsCount == 0 {
 		targetResource.Mem.Direction = s.ScaleDown
+		targetResource.Mem.Amount = int32(bbb.Config.Resources.Memory.MinBytes)
 	}
 
 	return targetResource, nil

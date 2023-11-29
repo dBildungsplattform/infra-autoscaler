@@ -128,27 +128,53 @@ func (sc *ScalerApp) Scale() {
 
 	go sc.calculateMetrics(servers)
 
+	metricsSource := *sc.metricsSource
 	for _, server := range servers {
 
-		targetResource, err := service.ShouldScale(int(server.ServerCpu), int(server.ServerRam))
+		// Get current resource usage
+		currCpuUsage, err := metricsSource.GetServerCpuUsage(server.ServerName)
+		if err != nil {
+			panic(err)
+		}
+		server.ServerCpuUsage = currCpuUsage
+		currMemUsage, err := metricsSource.GetServerMemoryUsage(server.ServerName)
+		if err != nil {
+			panic(err)
+		}
+		server.ServerRamUsage = currMemUsage
+
+		// Get scaling proposal from service
+		targetResource, err := service.ShouldScale(server)
 		if err != nil {
 			panic(err)
 		}
 
-		// Scale up
+		// Scale
 		if targetResource.Cpu.Direction == s.ScaleUp {
-			targetResource.Cpu.Amount = server.ServerCpu + cpuIncrease
+			if sc.appDefinition.ScalingMode == s.DirectScaling {
+				targetResource.Cpu.Amount = server.ServerCpu + cpuIncrease
+			}
+			// If heuristic scaling, get the increase from the service
 		}
 		if targetResource.Mem.Direction == s.ScaleUp {
-			targetResource.Mem.Amount = server.ServerRam + memIncrease
+			if sc.appDefinition.ScalingMode == s.DirectScaling {
+				targetResource.Mem.Amount = server.ServerRam + memIncrease
+			}
+			// If heuristic scaling, get the increase from the service
 		}
 
 		// Scale down
 		if targetResource.Cpu.Direction == s.ScaleDown {
-			targetResource.Cpu.Amount = server.ServerCpu - cpuDecrease
+			if sc.appDefinition.ScalingMode == s.DirectScaling {
+				targetResource.Cpu.Amount = server.ServerCpu - cpuDecrease
+			}
+			// If heuristic scaling, get the decrease from the service
 		}
 		if targetResource.Mem.Direction == s.ScaleDown {
-			targetResource.Mem.Amount = server.ServerRam - memDecrease
+			if sc.appDefinition.ScalingMode == s.DirectScaling {
+				targetResource.Mem.Amount = server.ServerRam - memDecrease
+			}
+			// If heuristic scaling, get the decrease from the service
 		}
 
 		provider := *sc.provider

@@ -1,5 +1,6 @@
 app_name: bbb-scaler
-stage: prod 
+stage: prod
+scaling_mode: direct
 service_type: BBB
 provider_type: Ionos
 metrics_source_type: Prometheus

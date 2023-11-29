@@ -5,7 +5,7 @@ type Service interface {
 	Validate() error
 	Init() error
 	GetResources() Resources
-	ShouldScale(cores int, memory int) (ScaleResource, error)
+	ShouldScale(Server) (ScaleResource, error)
 }
 
 type ServiceState interface {
