@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"math"
 	"scaler/metricssource"
 	"scaler/providers"
 	"scaler/services"
@@ -10,9 +11,9 @@ import (
 
 type ScalerApp struct {
 	appDefinition *s.AppDefinition
-	service       *s.Service
-	provider      *s.Provider
-	metricsSource *s.MetricsSource
+	service       s.Service
+	provider      s.Provider
+	metricsSource s.MetricsSource
 }
 
 // TODO: make these configurable
@@ -51,9 +52,9 @@ func InitApp(configPath string) (*ScalerApp, error) {
 
 	return &ScalerApp{
 		appDefinition: app,
-		service:       service,
-		provider:      provider,
-		metricsSource: metricsSource,
+		service:       *service,
+		provider:      *provider,
+		metricsSource: *metricsSource,
 	}, nil
 }
 
@@ -117,68 +118,58 @@ func initMetricsSource(t *s.MetricsSourceType, configFile []byte) (*s.MetricsSou
 }
 
 func (sc *ScalerApp) Scale() {
-	var service s.Service = *sc.service
-
 	cyclesCounter.Inc()
 
-	servers, err := (*sc.provider).GetServers(1)
+	servers, err := sc.provider.GetServers(1)
 	if err != nil {
 		panic(err)
 	}
 
 	go sc.calculateMetrics(servers)
 
-	metricsSource := *sc.metricsSource
 	for _, server := range servers {
 
 		// Get current resource usage
-		currCpuUsage, err := metricsSource.GetServerCpuUsage(server.ServerName)
+		currCpuUsage, err := sc.metricsSource.GetServerCpuUsage(server.ServerName)
 		if err != nil {
 			panic(err)
 		}
 		server.ServerCpuUsage = currCpuUsage
-		currMemUsage, err := metricsSource.GetServerMemoryUsage(server.ServerName)
+		currMemUsage, err := sc.metricsSource.GetServerMemoryUsage(server.ServerName)
 		if err != nil {
 			panic(err)
 		}
 		server.ServerRamUsage = currMemUsage
 
 		// Get scaling proposal from service
-		targetResource, err := service.ShouldScale(server)
+		targetResource, err := sc.service.ShouldScale(server)
 		if err != nil {
 			panic(err)
 		}
 
 		// Scale
-		if targetResource.Cpu.Direction == s.ScaleUp {
-			if sc.appDefinition.ScalingMode == s.DirectScaling {
-				targetResource.Cpu.Amount = server.ServerCpu + cpuIncrease
+		// Override heuristic target resource
+		if sc.appDefinition.ScalingMode == s.DirectScaling {
+			// Scale up CPU
+			if targetResource.Cpu.Direction == s.ScaleUp {
+				// TODO: Should we enforce max and min values here? Or rather in the service?
+				targetResource.Cpu.Amount = int32(math.Min(float64(sc.service.GetResources().Cpu.MaxCores), float64(server.ServerCpu+cpuIncrease)))
 			}
-			// If heuristic scaling, get the increase from the service
-		}
-		if targetResource.Mem.Direction == s.ScaleUp {
-			if sc.appDefinition.ScalingMode == s.DirectScaling {
-				targetResource.Mem.Amount = server.ServerRam + memIncrease
+			// Scale up RAM
+			if targetResource.Mem.Direction == s.ScaleUp {
+				targetResource.Mem.Amount = int32(math.Min(float64(int32(sc.service.GetResources().Memory.MaxBytes)), float64(server.ServerRam+memIncrease)))
 			}
-			// If heuristic scaling, get the increase from the service
-		}
-
-		// Scale down
-		if targetResource.Cpu.Direction == s.ScaleDown {
-			if sc.appDefinition.ScalingMode == s.DirectScaling {
-				targetResource.Cpu.Amount = server.ServerCpu - cpuDecrease
+			// Scale down CPU
+			if targetResource.Cpu.Direction == s.ScaleDown {
+				targetResource.Cpu.Amount = int32(math.Max(float64(int32(sc.service.GetResources().Cpu.MinCores)), float64(server.ServerCpu-cpuDecrease)))
 			}
-			// If heuristic scaling, get the decrease from the service
-		}
-		if targetResource.Mem.Direction == s.ScaleDown {
-			if sc.appDefinition.ScalingMode == s.DirectScaling {
-				targetResource.Mem.Amount = server.ServerRam - memDecrease
+			// Scale down RAM
+			if targetResource.Mem.Direction == s.ScaleDown {
+				targetResource.Mem.Amount = int32(math.Max(float64(int32(sc.service.GetResources().Memory.MinBytes)), float64(server.ServerRam-memDecrease)))
 			}
-			// If heuristic scaling, get the decrease from the service
 		}
 
-		provider := *sc.provider
-		err = provider.SetServerResources(server, targetResource)
+		err = sc.provider.SetServerResources(server, targetResource)
 		if err != nil {
 			panic(err)
 		}
