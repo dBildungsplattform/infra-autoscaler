@@ -32,6 +32,9 @@ func TestValidateConfigNotOK(t *testing.T) {
 }
 
 func TestParseConfigOK(t *testing.T) {
+	os.Setenv("BBB_API_TOKEN", "1234567890")
+	defer os.Unsetenv("BBB_API_TOKEN")
+
 	config, ok := s.OpenConfig("test_files/bbb_config_ok.yml")
 	if ok != nil {
 		t.Fatalf("Failed to open config: %v", ok)

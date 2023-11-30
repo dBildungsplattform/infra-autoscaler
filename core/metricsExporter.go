@@ -49,7 +49,7 @@ func initMetricsExporter() error {
 }
 
 func (sc ScalerApp) calculateMetrics(servers []s.Server) {
-	resources := (*sc.service).GetResources()
+	resources := sc.service.GetResources()
 
 	cpuUsedCapacity := 0
 	memoryUsedCapacity := 0
