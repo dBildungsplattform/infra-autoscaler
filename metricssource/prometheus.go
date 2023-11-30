@@ -71,7 +71,7 @@ func (p *Prometheus) QueryServerCPUUsage(serverLabels string) string {
 }
 
 func (p *Prometheus) QueryServerMemoryUsage(serverLabels string) string {
-	memoryUsageQuery := fmt.Sprintf("(node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes) / node_memory_MemTotal_bytes{%s}", serverLabels)
+	memoryUsageQuery := fmt.Sprintf("1 - (node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes) / node_memory_MemTotal_bytes{%s}", serverLabels)
 	return memoryUsageQuery
 }
 
