@@ -150,7 +150,7 @@ func (bbb BBBService) ShouldScale(server s.Server) (s.ScaleResource, error) {
 		targetResource.Cpu.Amount = server.ServerCpu + int32(math.Ceil(float64(cpuInc)))
 	}
 
-	if participantsCount == 0 {
+	if server.ServerCpu > int32(bbb.Config.Resources.Cpu.MinCores) && participantsCount == 0 {
 		targetResource.Cpu.Direction = s.ScaleDown
 		targetResource.Cpu.Amount = int32(bbb.Config.Resources.Cpu.MinCores)
 	}
@@ -166,7 +166,7 @@ func (bbb BBBService) ShouldScale(server s.Server) (s.ScaleResource, error) {
 		memInc := memMaxUsageDelta * float32(server.ServerRam) / server.ServerRamUsage
 		targetResource.Mem.Amount = server.ServerRam + int32(math.Ceil(float64(memInc)))
 	}
-	if participantsCount == 0 {
+	if server.ServerRam > int32(bbb.Config.Resources.Memory.MinBytes) && participantsCount == 0 {
 		targetResource.Mem.Direction = s.ScaleDown
 		targetResource.Mem.Amount = int32(bbb.Config.Resources.Memory.MinBytes)
 	}

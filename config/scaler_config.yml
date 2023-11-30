@@ -11,7 +11,7 @@ ionos_config:
   server_source:
     dynamic:
       datacenter_ids: [UUID]
-      server_name_regex: ".*"
+      server_name_regex: "bbb-.*"
 bbb_config:
   resources:
     cpu:

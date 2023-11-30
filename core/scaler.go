@@ -16,8 +16,8 @@ type ScalerApp struct {
 }
 
 // TODO: make these configurable
-var memIncrease int32 = 1
-var memDecrease int32 = 1
+var memIncrease int32 = 1024
+var memDecrease int32 = 1024
 var cpuIncrease int32 = 1
 var cpuDecrease int32 = 1
 
@@ -178,7 +178,10 @@ func (sc *ScalerApp) Scale() {
 		}
 
 		provider := *sc.provider
-		provider.SetServerResources(server, targetResource)
+		err = provider.SetServerResources(server, targetResource)
+		if err != nil {
+			panic(err)
+		}
 		// Placeholder to have metrics
 		lastScaleTimeGauge.SetToCurrentTime()
 	}

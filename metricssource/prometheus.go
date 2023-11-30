@@ -86,7 +86,7 @@ func (p *Prometheus) Query(query string) (float32, error) {
 	if len(warnings) > 0 {
 		fmt.Printf("Warnings: %v\n", warnings)
 	}
-	if result.Type() == model.ValScalar {
+	if result.Type() == model.ValVector {
 		vector := result.(model.Vector)
 		if len(vector) == 0 {
 			errorsTotalCounter.Inc()
