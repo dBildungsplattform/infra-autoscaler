@@ -29,6 +29,7 @@ type ScaleResource struct {
 
 type ScaleOp struct {
 	Direction ScaleDirection
+	Reason    string
 	Amount    int32
 }
 

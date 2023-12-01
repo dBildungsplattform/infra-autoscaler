@@ -116,7 +116,7 @@ func (i Ionos) SetServerResources(server s.Server, targetRes s.ScaleResource) er
 		return fmt.Errorf("server is not valid")
 	}
 
-	fmt.Printf("targetServer: %+v \n", targetServer.Properties) // Check mode
+	fmt.Printf("Target for server %s: %+v \n", server.ServerName, targetRes)
 	_, _, err := i.Api.ServersApi.DatacentersServersPut(context.TODO(), server.DatacenterId, server.ServerId).Server(targetServer).XContractNumber(int32(i.Config.ContractId)).Execute()
 	if err != nil {
 		errorsTotalCounter.Inc()

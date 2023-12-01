@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"math"
 	"scaler/metricssource"
 	"scaler/providers"
 	"scaler/services"
@@ -29,6 +28,9 @@ func InitApp(configPath string) (*ScalerApp, error) {
 	}
 
 	app, err := s.LoadConfig[s.AppDefinition](configFile)
+	if app.ScalingMode == "" {
+		app.ScalingMode = s.DirectScaling
+	}
 	if err != nil {
 		return nil, fmt.Errorf("error while loading app config: %s", err)
 	}
@@ -130,19 +132,19 @@ func (sc *ScalerApp) Scale() {
 	for _, server := range servers {
 
 		// Get current resource usage
-		currCpuUsage, err := sc.metricsSource.GetServerCpuUsage(server.ServerName)
+		server.ServerCpuUsage, err = sc.metricsSource.GetServerCpuUsage(server.ServerName)
 		if err != nil {
 			panic(err)
 		}
-		server.ServerCpuUsage = currCpuUsage
-		currMemUsage, err := sc.metricsSource.GetServerMemoryUsage(server.ServerName)
+		server.ServerRamUsage, err = sc.metricsSource.GetServerMemoryUsage(server.ServerName)
 		if err != nil {
+			// TODO: Should be possible to recover from this, at least for a couple of cycles
 			panic(err)
 		}
-		server.ServerRamUsage = currMemUsage
 
 		// Get scaling proposal from service
 		targetResource, err := sc.service.ShouldScale(server)
+		fmt.Printf("Scaling proposal for %+v: %+v\n", server.ServerName, targetResource)
 		if err != nil {
 			panic(err)
 		}
@@ -152,20 +154,19 @@ func (sc *ScalerApp) Scale() {
 		if sc.appDefinition.ScalingMode == s.DirectScaling {
 			// Scale up CPU
 			if targetResource.Cpu.Direction == s.ScaleUp {
-				// TODO: Should we enforce max and min values here? Or rather in the service?
-				targetResource.Cpu.Amount = int32(math.Min(float64(sc.service.GetResources().Cpu.MaxCores), float64(server.ServerCpu+cpuIncrease)))
+				targetResource.Cpu.Amount = server.ServerCpu + cpuIncrease
 			}
 			// Scale up RAM
 			if targetResource.Mem.Direction == s.ScaleUp {
-				targetResource.Mem.Amount = int32(math.Min(float64(int32(sc.service.GetResources().Memory.MaxBytes)), float64(server.ServerRam+memIncrease)))
+				targetResource.Mem.Amount = server.ServerRam + memIncrease
 			}
 			// Scale down CPU
 			if targetResource.Cpu.Direction == s.ScaleDown {
-				targetResource.Cpu.Amount = int32(math.Max(float64(int32(sc.service.GetResources().Cpu.MinCores)), float64(server.ServerCpu-cpuDecrease)))
+				targetResource.Cpu.Amount = server.ServerCpu - cpuDecrease
 			}
 			// Scale down RAM
 			if targetResource.Mem.Direction == s.ScaleDown {
-				targetResource.Mem.Amount = int32(math.Max(float64(int32(sc.service.GetResources().Memory.MinBytes)), float64(server.ServerRam-memDecrease)))
+				targetResource.Mem.Amount = server.ServerRam - memDecrease
 			}
 		}
 
