@@ -17,9 +17,9 @@ type ScalerApp struct {
 
 // TODO: make these configurable
 var memIncrease int32 = 1024
-var memDecrease int32 = 1024
+var memDecrease int32 = -1024
 var cpuIncrease int32 = 1
-var cpuDecrease int32 = 1
+var cpuDecrease int32 = -1
 
 func InitApp(configPath string) (*ScalerApp, error) {
 	configFile, err := s.OpenConfig(configPath)
@@ -143,8 +143,8 @@ func (sc *ScalerApp) Scale() {
 		}
 
 		// Get scaling proposal from service
-		targetResource, err := sc.service.ShouldScale(server)
-		fmt.Printf("Scaling proposal for %+v: %+v\n", server.ServerName, targetResource)
+		scalingProposal, err := sc.service.ShouldScale(server)
+		fmt.Printf("Scaling proposal for %+v: %+v\n", server.ServerName, scalingProposal)
 		if err != nil {
 			panic(err)
 		}
@@ -153,24 +153,24 @@ func (sc *ScalerApp) Scale() {
 		// Override heuristic target resource
 		if sc.appDefinition.ScalingMode == s.DirectScaling {
 			// Scale up CPU
-			if targetResource.Cpu.Direction == s.ScaleUp {
-				targetResource.Cpu.Amount = server.ServerCpu + cpuIncrease
+			if scalingProposal.Cpu.Direction == s.ScaleUp {
+				scalingProposal.Cpu.Amount = cpuIncrease
 			}
 			// Scale up RAM
-			if targetResource.Mem.Direction == s.ScaleUp {
-				targetResource.Mem.Amount = server.ServerRam + memIncrease
+			if scalingProposal.Mem.Direction == s.ScaleUp {
+				scalingProposal.Mem.Amount = memIncrease
 			}
 			// Scale down CPU
-			if targetResource.Cpu.Direction == s.ScaleDown {
-				targetResource.Cpu.Amount = server.ServerCpu - cpuDecrease
+			if scalingProposal.Cpu.Direction == s.ScaleDown {
+				scalingProposal.Cpu.Amount = cpuDecrease
 			}
 			// Scale down RAM
-			if targetResource.Mem.Direction == s.ScaleDown {
-				targetResource.Mem.Amount = server.ServerRam - memDecrease
+			if scalingProposal.Mem.Direction == s.ScaleDown {
+				scalingProposal.Mem.Amount = memDecrease
 			}
 		}
 
-		err = sc.provider.SetServerResources(server, targetResource)
+		err = sc.provider.SetServerResources(server, scalingProposal)
 		if err != nil {
 			panic(err)
 		}

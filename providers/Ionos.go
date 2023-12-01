@@ -100,15 +100,22 @@ func addServer(servers *[]s.Server, dcServer ic.Server, datacenterId string) {
 	})
 }
 
-func (i Ionos) SetServerResources(server s.Server, targetRes s.ScaleResource) error {
-	if targetRes.Cpu.Direction == s.ScaleUp && targetRes.Mem.Direction == s.ScaleDown || targetRes.Cpu.Direction == s.ScaleDown && targetRes.Mem.Direction == s.ScaleUp {
+func (i Ionos) SetServerResources(server s.Server, scalingProposal s.ScaleResource) error {
+	if scalingProposal.Cpu.Direction == s.ScaleUp && scalingProposal.Mem.Direction == s.ScaleDown || scalingProposal.Cpu.Direction == s.ScaleDown && scalingProposal.Mem.Direction == s.ScaleUp {
 		return fmt.Errorf("cannot scale cpu and memory in opposite directions")
 	}
 
-	// Validate and scale up server
+	if scalingProposal.Cpu.Direction == s.ScaleNone && scalingProposal.Mem.Direction == s.ScaleNone {
+		return nil
+	}
+
+	targetCpu := server.ServerCpu + scalingProposal.Cpu.Amount
+	targetMem := server.ServerRam + scalingProposal.Mem.Amount
+
+	// Validate and scale server
 	targetServer := *ic.NewServer(ic.ServerProperties{
-		Cores: &targetRes.Cpu.Amount,
-		Ram:   &targetRes.Mem.Amount,
+		Cores: &targetCpu,
+		Ram:   &targetMem,
 	})
 	validServer := validateServer(targetServer, *i.Contract)
 	if !validServer {
@@ -116,12 +123,12 @@ func (i Ionos) SetServerResources(server s.Server, targetRes s.ScaleResource) er
 		return fmt.Errorf("server is not valid")
 	}
 
-	fmt.Printf("Target for server %s: %+v \n", server.ServerName, targetRes)
-	_, _, err := i.Api.ServersApi.DatacentersServersPut(context.TODO(), server.DatacenterId, server.ServerId).Server(targetServer).XContractNumber(int32(i.Config.ContractId)).Execute()
-	if err != nil {
-		errorsTotalCounter.Inc()
-		return fmt.Errorf("error while setting server resources: %s", err)
-	}
+	fmt.Printf("Target for server %s: %d cores, %d bytes\n", server.ServerName, *targetServer.Properties.Cores, *targetServer.Properties.Ram)
+	//_, _, err := i.Api.ServersApi.DatacentersServersPut(context.TODO(), server.DatacenterId, server.ServerId).Server(targetServer).XContractNumber(int32(i.Config.ContractId)).Execute()
+	//if err != nil {
+	//	errorsTotalCounter.Inc()
+	//	return fmt.Errorf("error while setting server resources: %s", err)
+	//}
 	return nil
 }
 

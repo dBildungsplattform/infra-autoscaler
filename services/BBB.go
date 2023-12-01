@@ -137,7 +137,7 @@ func (bbb BBBService) ShouldScale(server s.Server) (s.ScaleResource, error) {
 
 	participantsCount, err := bbb.GetParticipantsCount(server.ServerName)
 	if err != nil {
-		return targetResource, err
+		return targetResource, fmt.Errorf("error while getting participants count: %s", err)
 	}
 
 	// Scaling rules
