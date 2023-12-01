@@ -122,6 +122,16 @@ func (bbb BBBService) GetResources() s.Resources {
 }
 
 func (bbb BBBService) ShouldScale(server s.Server) (s.ScaleResource, error) {
+
+	participantsCount, err := bbb.GetParticipantsCount(server.ServerName)
+	if err != nil {
+		return s.ScaleResource{}, fmt.Errorf("error while getting participants count: %s", err)
+	}
+
+	return applyRules(server, participantsCount, bbb), nil
+}
+
+func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ScaleResource {
 	targetResource := s.ScaleResource{
 		Cpu: s.ScaleOp{
 			Direction: s.ScaleNone,
@@ -135,13 +145,6 @@ func (bbb BBBService) ShouldScale(server s.Server) (s.ScaleResource, error) {
 		},
 	}
 
-	participantsCount, err := bbb.GetParticipantsCount(server.ServerName)
-	if err != nil {
-		return targetResource, fmt.Errorf("error while getting participants count: %s", err)
-	}
-
-	// Scaling rules
-
 	// Rule 1: Scale up cpu if current cpu is below configured minimum for the service
 	if server.ServerCpu < int32(bbb.Config.Resources.Cpu.MinCores) {
 		targetResource.Cpu.Direction = s.ScaleUp
@@ -151,7 +154,7 @@ func (bbb BBBService) ShouldScale(server s.Server) (s.ScaleResource, error) {
 
 	// Rule 2: Scale up cpu if current cpu usage is above configured maximum usage for the service
 	// Scale up to either reach cpu usage below the configured maximum usage or to the configured maximum cpu
-	if cpuMaxUsageDelta := server.ServerCpuUsage - bbb.Config.Resources.Cpu.MaxUsage; cpuMaxUsageDelta > 0 {
+	if cpuMaxUsageDelta := server.ServerCpuUsage - bbb.Config.Resources.Cpu.MaxUsage; cpuMaxUsageDelta > 0 && server.ServerCpu < int32(bbb.Config.Resources.Cpu.MaxCores) {
 		targetResource.Cpu.Direction = s.ScaleUp
 		targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 2"
 		cpuInc := cpuMaxUsageDelta * float32(server.ServerCpu) / server.ServerCpuUsage
@@ -177,7 +180,7 @@ func (bbb BBBService) ShouldScale(server s.Server) (s.ScaleResource, error) {
 
 	// Rule 5: Scale up memory if current ram usage is above configured maximum usage for the service
 	// Scale up to either reach ram usage below the configured maximum usage or to the configured maximum memory
-	if memMaxUsageDelta := server.ServerRamUsage - bbb.Config.Resources.Memory.MaxUsage; memMaxUsageDelta > 0 {
+	if memMaxUsageDelta := server.ServerRamUsage - bbb.Config.Resources.Memory.MaxUsage; memMaxUsageDelta > 0 && server.ServerRam < int32(bbb.Config.Resources.Memory.MaxBytes) {
 		targetResource.Mem.Direction = s.ScaleUp
 		targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 5"
 		memInc := memMaxUsageDelta * float32(server.ServerRam) / server.ServerRamUsage
@@ -200,16 +203,16 @@ func (bbb BBBService) ShouldScale(server s.Server) (s.ScaleResource, error) {
 		if server.ServerRam > int32(bbb.Config.Resources.Memory.MinBytes) {
 			targetResource.Mem.Direction = s.ScaleDown
 			targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 7"
-			targetResource.Mem.Amount = int32(bbb.Config.Resources.Memory.MinBytes)
+			targetResource.Mem.Amount = server.ServerRam - int32(bbb.Config.Resources.Memory.MinBytes)
 		}
 		if server.ServerCpu > int32(bbb.Config.Resources.Cpu.MinCores) {
 			targetResource.Cpu.Direction = s.ScaleDown
 			targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 7"
-			targetResource.Cpu.Amount = int32(bbb.Config.Resources.Cpu.MinCores)
+			targetResource.Cpu.Amount = server.ServerCpu - int32(bbb.Config.Resources.Cpu.MinCores)
 		}
 	}
 
-	return targetResource, nil
+	return targetResource
 }
 
 func (service BBBService) Validate() error {
