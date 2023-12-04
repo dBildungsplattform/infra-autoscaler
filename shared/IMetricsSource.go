@@ -3,17 +3,19 @@ package shared
 import "fmt"
 
 /*** Metrics definition ***/
-type Metrics interface {
+type MetricsSource interface {
 	Validate() error
+	GetServerCpuUsage(string) (float32, error)
+	GetServerMemoryUsage(string) (float32, error)
 }
 
-type MetricsType string
+type MetricsSourceType string
 
 const (
 	Prometheus = "Prometheus"
 )
 
-func (m MetricsType) Validate() error {
+func (m MetricsSourceType) Validate() error {
 	switch m {
 	case Prometheus:
 		return nil

@@ -1,4 +1,4 @@
-package metrics
+package metricssource
 
 import (
 	"context"
@@ -58,6 +58,9 @@ func (p *Prometheus) Init() error {
 		return err
 	}
 	p.API = v1.NewAPI(client)
+	if err := initMetricsExporter("prometheus"); err != nil {
+		return fmt.Errorf("error while registering metrics: %s", err)
+	}
 	return nil
 }
 
@@ -68,23 +71,25 @@ func (p *Prometheus) QueryServerCPUUsage(serverLabels string) string {
 }
 
 func (p *Prometheus) QueryServerMemoryUsage(serverLabels string) string {
-	memoryUsageQuery := fmt.Sprintf("(node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes) / node_memory_MemTotal_bytes{%s}", serverLabels)
+	memoryUsageQuery := fmt.Sprintf("1 - (node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes) / node_memory_MemTotal_bytes{%s}", serverLabels)
 	return memoryUsageQuery
 }
 
-func (p *Prometheus) Query(query string) (float64, error) {
+func (p *Prometheus) Query(query string) (float32, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*timeout)
 	defer cancel()
 	result, warnings, err := p.API.Query(ctx, query, time.Now(), v1.WithTimeout(timeout))
 	if err != nil {
+		errorsTotalCounter.Inc()
 		return 0, err
 	}
 	if len(warnings) > 0 {
 		fmt.Printf("Warnings: %v\n", warnings)
 	}
-	if result.Type() == model.ValScalar {
+	if result.Type() == model.ValVector {
 		vector := result.(model.Vector)
 		if len(vector) == 0 {
+			errorsTotalCounter.Inc()
 			return 0, fmt.Errorf("no data found")
 		}
 		if len(vector) != 1 {
@@ -92,8 +97,21 @@ func (p *Prometheus) Query(query string) (float64, error) {
 			// This is not a scaler error but we should log it
 			fmt.Printf("Unexpected vector length: %v\n", len(vector))
 		}
-		return float64(vector[0].Value), nil
+		return float32(vector[0].Value), nil
 	} else {
+		errorsTotalCounter.Inc()
 		return 0, fmt.Errorf("unexpected type: %v", result.Type())
 	}
+}
+
+func (p Prometheus) GetServerCpuUsage(serverName string) (float32, error) {
+	serverLabels := fmt.Sprintf("instance=~\"%s\"", serverName)
+	query := p.QueryServerCPUUsage(serverLabels)
+	return p.Query(query)
+}
+
+func (p Prometheus) GetServerMemoryUsage(serverName string) (float32, error) {
+	serverLabels := fmt.Sprintf("instance=~\"%s\"", serverName)
+	query := p.QueryServerMemoryUsage(serverLabels)
+	return p.Query(query)
 }

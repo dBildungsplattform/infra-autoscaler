@@ -3,13 +3,19 @@ package shared
 import (
 	"fmt"
 	"regexp"
+	"time"
 )
 
 type Server struct {
-	DatacenterId string
-	ServerId     string
-	ServerCpu    float64
-	ServerRam    float64
+	DatacenterId    string
+	ServerId        string
+	ServerName      string
+	CpuArchitecture string
+	ServerCpu       int32
+	ServerRam       int32
+	ServerCpuUsage  float32
+	ServerRamUsage  float32
+	LastUpdated     time.Time
 }
 
 type ServerSource struct {
