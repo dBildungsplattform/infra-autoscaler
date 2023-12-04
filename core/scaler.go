@@ -128,10 +128,12 @@ func (sc ScalerApp) scaleServer(server s.Server) error {
 	if err != nil {
 		return fmt.Errorf("error while getting cpu usage for server %s: %s", server.ServerName, err)
 	}
+	slog.Info(fmt.Sprintf("CPU usage for %s: %f\n", server.ServerName, server.ServerCpuUsage))
 	server.ServerRamUsage, err = sc.metricsSource.GetServerMemoryUsage(server.ServerName)
 	if err != nil {
 		return fmt.Errorf("error while getting memory usage for server %s: %s", server.ServerName, err)
 	}
+	slog.Info(fmt.Sprintf("Memory usage for %s: %f\n", server.ServerName, server.ServerRamUsage))
 
 	// Get scaling proposal from service
 	scalingProposal, err := sc.service.ShouldScale(server)

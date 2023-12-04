@@ -52,7 +52,7 @@ func (i Ionos) GetServers(depth int) ([]s.Server, error) {
 	}
 	if err != nil {
 		errorsTotalCounter.Inc()
-		return nil, fmt.Errorf("error while getting servers: %s", err)
+		return nil, err
 	}
 	return servers, nil
 }
@@ -64,8 +64,9 @@ func getServersStatic(servers *[]s.Server, i Ionos) error {
 			serverSource.DatacenterId,
 			serverSource.ServerId).XContractNumber(int32(i.Config.ContractId)).Execute()
 		if err != nil {
-			return fmt.Errorf("error while getting servers: %s", err)
+			return fmt.Errorf("error while getting server %s in datacenter %s: %s", serverSource.ServerId, serverSource.DatacenterId, err)
 		}
+		slog.Info(fmt.Sprintf("Found server %s (%s) in datacenter %s\n", *dcServer.Properties.Name, serverSource.ServerId, serverSource.DatacenterId))
 		addServer(servers, dcServer, serverSource.DatacenterId)
 	}
 	return nil
@@ -76,13 +77,17 @@ func getServersDynamic(servers *[]s.Server, i Ionos, depth int) error {
 		slog.Info(fmt.Sprint("Getting servers from datacenter: ", datacenterId))
 		dcServers, _, err := i.Api.ServersApi.DatacentersServersGet(context.TODO(), datacenterId).Depth(int32(depth)).XContractNumber(int32(i.Config.ContractId)).Execute()
 		if err != nil {
-			return fmt.Errorf("error while getting servers: %s", err)
+			return fmt.Errorf("error while getting servers in datacenter %s: %s", datacenterId, err)
 		}
+		slog.Info(fmt.Sprintf("Found %d servers in datacenter %s\n", len(*dcServers.Items), datacenterId))
+		matchCount := 0
 		for _, dcServer := range *dcServers.Items {
 			if match, _ := regexp.MatchString(i.Config.ServerSource.Dynamic.ServerNameRegex, *dcServer.Properties.Name); match {
+				matchCount++
 				addServer(servers, dcServer, datacenterId)
 			}
 		}
+		slog.Info(fmt.Sprintf("Matched %d servers in datacenter %s\n", matchCount, datacenterId))
 	}
 	return nil
 }
@@ -118,10 +123,10 @@ func (i Ionos) SetServerResources(server s.Server, scalingProposal s.ScaleResour
 		Cores: &targetCpu,
 		Ram:   &targetMem,
 	})
-	validServer := validateServer(targetServer, *i.Contract)
-	if !validServer {
+	err := validateServer(targetServer, *i.Contract)
+	if err != nil {
 		errorsTotalCounter.Inc()
-		return fmt.Errorf("server is not valid")
+		return fmt.Errorf("target server for %s is not valid: %s", *targetServer.Properties.Name, err)
 	}
 
 	slog.Info(fmt.Sprintf("Target for server %s: %d cores, %d bytes\n", server.ServerName, *targetServer.Properties.Cores, *targetServer.Properties.Ram))
@@ -133,12 +138,23 @@ func (i Ionos) SetServerResources(server s.Server, scalingProposal s.ScaleResour
 	return nil
 }
 
-func validateServer(server ic.Server, contract ic.Contract) bool {
-	if *server.Properties.Cores > *contract.Properties.ResourceLimits.CoresPerServer || *server.Properties.Ram > *contract.Properties.ResourceLimits.RamPerServer {
-		return false
+func validateServer(server ic.Server, contract ic.Contract) error {
+	coresOk := *server.Properties.Cores <= *contract.Properties.ResourceLimits.CoresPerServer
+	ramOk := *server.Properties.Ram <= *contract.Properties.ResourceLimits.RamPerServer
+	errorMessage := ""
+	if !coresOk {
+		errorMessage += fmt.Sprintf("cores %d are above contract limit %d", *server.Properties.Cores, *contract.Properties.ResourceLimits.CoresPerServer)
 	}
-
-	return true
+	if !ramOk {
+		if errorMessage != "" {
+			errorMessage += ", "
+		}
+		errorMessage += fmt.Sprintf("memory %d is above contract limit %d", *server.Properties.Ram, *contract.Properties.ResourceLimits.RamPerServer)
+	}
+	if errorMessage != "" {
+		return fmt.Errorf(errorMessage)
+	}
+	return nil
 }
 
 func (i Ionos) Validate() error {
