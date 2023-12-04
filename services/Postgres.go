@@ -37,6 +37,10 @@ func (postgres PostgresService) GetResources() s.Resources {
 	return s.Resources{} // TODO: implement
 }
 
+func (postgres PostgresService) GetCycleTimeSeconds() int {
+	return 0 // TODO: implement
+}
+
 func (postgres PostgresService) ShouldScale(s.Server) (s.ScaleResource, error) {
 	return s.ScaleResource{}, nil // TODO: implement
 }

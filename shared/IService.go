@@ -5,6 +5,7 @@ type Service interface {
 	Validate() error
 	Init() error
 	GetResources() Resources
+	GetCycleTimeSeconds() int
 	ShouldScale(Server) (ScaleResource, error)
 }
 
