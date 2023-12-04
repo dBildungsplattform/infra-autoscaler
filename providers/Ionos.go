@@ -8,6 +8,7 @@ import (
 	"time"
 
 	ic "github.com/ionos-cloud/sdk-go/v6"
+	"golang.org/x/exp/slog"
 )
 
 type ProviderConfig struct {
@@ -72,7 +73,7 @@ func getServersStatic(servers *[]s.Server, i Ionos) error {
 
 func getServersDynamic(servers *[]s.Server, i Ionos, depth int) error {
 	for _, datacenterId := range i.Config.ServerSource.Dynamic.DatacenterIds {
-		fmt.Println("Getting servers from datacenter: ", datacenterId)
+		slog.Info(fmt.Sprint("Getting servers from datacenter: ", datacenterId))
 		dcServers, _, err := i.Api.ServersApi.DatacentersServersGet(context.TODO(), datacenterId).Depth(int32(depth)).XContractNumber(int32(i.Config.ContractId)).Execute()
 		if err != nil {
 			return fmt.Errorf("error while getting servers: %s", err)
@@ -123,7 +124,7 @@ func (i Ionos) SetServerResources(server s.Server, scalingProposal s.ScaleResour
 		return fmt.Errorf("server is not valid")
 	}
 
-	fmt.Printf("Target for server %s: %d cores, %d bytes\n", server.ServerName, *targetServer.Properties.Cores, *targetServer.Properties.Ram)
+	slog.Info(fmt.Sprintf("Target for server %s: %d cores, %d bytes\n", server.ServerName, *targetServer.Properties.Cores, *targetServer.Properties.Ram))
 	//_, _, err := i.Api.ServersApi.DatacentersServersPut(context.TODO(), server.DatacenterId, server.ServerId).Server(targetServer).XContractNumber(int32(i.Config.ContractId)).Execute()
 	//if err != nil {
 	//	errorsTotalCounter.Inc()

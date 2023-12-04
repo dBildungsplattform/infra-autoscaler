@@ -12,6 +12,7 @@ import (
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
+	"golang.org/x/exp/slog"
 )
 
 type PrometheusConfig struct {
@@ -84,7 +85,7 @@ func (p *Prometheus) Query(query string) (float32, error) {
 		return 0, err
 	}
 	if len(warnings) > 0 {
-		fmt.Printf("Warnings: %v\n", warnings)
+		slog.Warn(fmt.Sprintf("Warnings: %v\n", warnings))
 	}
 	if result.Type() == model.ValVector {
 		vector := result.(model.Vector)
@@ -95,7 +96,7 @@ func (p *Prometheus) Query(query string) (float32, error) {
 		if len(vector) != 1 {
 			// Duplicate metrics can occur if Prometheus has multiple jobs with the same targets
 			// This is not a scaler error but we should log it
-			fmt.Printf("Unexpected vector length: %v\n", len(vector))
+			slog.Warn(fmt.Sprintf("Unexpected vector length: %v\n", len(vector)))
 		}
 		return float32(vector[0].Value), nil
 	} else {

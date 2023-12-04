@@ -7,6 +7,8 @@ import (
 	"scaler/services"
 	s "scaler/shared"
 	"time"
+
+	"golang.org/x/exp/slog"
 )
 
 type ScalerApp struct {
@@ -128,14 +130,14 @@ func (sc ScalerApp) scaleServer(server s.Server) error {
 	}
 	server.ServerRamUsage, err = sc.metricsSource.GetServerMemoryUsage(server.ServerName)
 	if err != nil {
-		return fmt.Errorf("Error while getting memory usage for server %s: %s\n", server.ServerName, err)
+		return fmt.Errorf("error while getting memory usage for server %s: %s", server.ServerName, err)
 	}
 
 	// Get scaling proposal from service
 	scalingProposal, err := sc.service.ShouldScale(server)
-	fmt.Printf("Scaling proposal for %+v: %+v\n", server.ServerName, scalingProposal)
+	slog.Info(fmt.Sprintf("Scaling proposal for %+v: %+v\n", server.ServerName, scalingProposal))
 	if err != nil {
-		return fmt.Errorf("Error while getting scaling proposal for server %s: %s\n", server.ServerName, err)
+		return fmt.Errorf("error while getting scaling proposal for server %s: %s", server.ServerName, err)
 	}
 
 	// Scale
@@ -161,7 +163,7 @@ func (sc ScalerApp) scaleServer(server s.Server) error {
 
 	err = sc.provider.SetServerResources(server, scalingProposal)
 	if err != nil {
-		return fmt.Errorf("Error while setting resources for server %s: %s\n", server.ServerName, err)
+		return fmt.Errorf("error while setting resources for server %s: %s", server.ServerName, err)
 	}
 	if scalingProposal.Cpu.Direction != s.ScaleNone || scalingProposal.Mem.Direction != s.ScaleNone {
 		lastScaleTimeGauge.SetToCurrentTime()
@@ -175,7 +177,7 @@ func (sc *ScalerApp) Scale() {
 
 		servers, err := sc.provider.GetServers(1)
 		if err != nil {
-			fmt.Println("Error while getting servers: ", err)
+			slog.Error(fmt.Sprint("Error while getting servers: ", err))
 		}
 
 		go sc.calculateMetrics(servers)
@@ -183,7 +185,7 @@ func (sc *ScalerApp) Scale() {
 		for _, server := range servers {
 			err := sc.scaleServer(server)
 			if err != nil {
-				fmt.Println(err)
+				slog.Error(err.Error())
 			}
 		}
 		time.Sleep(time.Duration(sc.service.GetCycleTimeSeconds()) * time.Second)
