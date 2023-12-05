@@ -144,7 +144,6 @@ func (sc *ScalerApp) Scale() {
 
 		// Get scaling proposal from service
 		scalingProposal, err := sc.service.ShouldScale(server)
-		fmt.Printf("Scaling proposal for %+v: %+v\n", server.ServerName, scalingProposal)
 		if err != nil {
 			panic(err)
 		}
@@ -169,6 +168,7 @@ func (sc *ScalerApp) Scale() {
 				scalingProposal.Mem.Amount = memDecrease
 			}
 		}
+		fmt.Printf("Scaling proposal for %+v: %+v\n", server.ServerName, scalingProposal)
 
 		err = sc.provider.SetServerResources(server, scalingProposal)
 		if err != nil {
