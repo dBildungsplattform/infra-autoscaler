@@ -16,6 +16,7 @@ type Server struct {
 	ServerCpuUsage  float32
 	ServerRamUsage  float32
 	LastUpdated     time.Time
+	Ready           bool
 }
 
 type ServerSource struct {

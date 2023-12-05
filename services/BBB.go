@@ -122,6 +122,9 @@ func (bbb BBBService) GetResources() s.Resources {
 }
 
 func (bbb BBBService) ShouldScale(server s.Server) (s.ScaleResource, error) {
+	if !server.Ready {
+		return s.ScaleResource{}, fmt.Errorf("server %s is not ready", server.ServerName)
+	}
 
 	participantsCount, err := bbb.GetParticipantsCount(server.ServerName)
 	if err != nil {
