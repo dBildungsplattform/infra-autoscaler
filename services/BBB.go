@@ -157,14 +157,14 @@ func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ScaleR
 	// Rule 1 CPU
 	if server.ServerCpu < int32(bbb.Config.Resources.Cpu.MinCores) {
 		targetResource.Cpu.Direction = s.ScaleUp
-		targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 1"
+		targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 1: resource below minimum"
 		targetResource.Cpu.Amount = int32(bbb.Config.Resources.Cpu.MinCores) - server.ServerCpu
 	}
 
 	// Rule 2 CPU
 	if cpuMaxUsageDelta := server.ServerCpuUsage - bbb.Config.Resources.Cpu.MaxUsage; cpuMaxUsageDelta > 0 && server.ServerCpu < int32(bbb.Config.Resources.Cpu.MaxCores) {
 		targetResource.Cpu.Direction = s.ScaleUp
-		targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 2"
+		targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 2: usage above maximum"
 		cpuInc := cpuMaxUsageDelta * float32(server.ServerCpu) / server.ServerCpuUsage
 		targetHeuristic := server.ServerCpu + int32(math.Ceil(float64(cpuInc)))
 		targetResource.Cpu.Amount = int32(math.Min(float64(targetHeuristic), float64((bbb.Config.Resources.Cpu.MaxCores)))) - server.ServerCpu
@@ -173,14 +173,14 @@ func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ScaleR
 	// Rule 1 memory
 	if server.ServerRam < int32(bbb.Config.Resources.Memory.MinBytes) {
 		targetResource.Mem.Direction = s.ScaleUp
-		targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 1"
+		targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 1: resource below minimum"
 		targetResource.Mem.Amount = int32(bbb.Config.Resources.Memory.MinBytes) - server.ServerRam
 	}
 
 	// Rule 2 memory
 	if memMaxUsageDelta := server.ServerRamUsage - bbb.Config.Resources.Memory.MaxUsage; memMaxUsageDelta > 0 && server.ServerRam < int32(bbb.Config.Resources.Memory.MaxBytes) {
 		targetResource.Mem.Direction = s.ScaleUp
-		targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 2"
+		targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 2: usage above maximum"
 		memInc := memMaxUsageDelta * float32(server.ServerRam) / server.ServerRamUsage
 		targetHeuristic := server.ServerRam + int32(math.Ceil(float64(memInc)))
 		targetResource.Mem.Amount = int32(math.Min(float64(targetHeuristic), float64((bbb.Config.Resources.Memory.MaxBytes)))) - server.ServerRam
@@ -190,12 +190,12 @@ func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ScaleR
 	if participantsCount == 0 {
 		if server.ServerRam > int32(bbb.Config.Resources.Memory.MinBytes) {
 			targetResource.Mem.Direction = s.ScaleDown
-			targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 3"
+			targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 3: no participants"
 			targetResource.Mem.Amount = int32(bbb.Config.Resources.Memory.MinBytes) - server.ServerRam
 		}
 		if server.ServerCpu > int32(bbb.Config.Resources.Cpu.MinCores) {
 			targetResource.Cpu.Direction = s.ScaleDown
-			targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 3"
+			targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 3: no participants"
 			targetResource.Cpu.Amount = int32(bbb.Config.Resources.Cpu.MinCores) - server.ServerCpu
 		}
 	}
