@@ -122,6 +122,9 @@ func (bbb BBBService) GetResources() s.Resources {
 }
 
 func (bbb BBBService) ShouldScale(server s.Server) (s.ScaleResource, error) {
+	if !server.Ready {
+		return s.ScaleResource{}, fmt.Errorf("server %s is not ready", server.ServerName)
+	}
 
 	participantsCount, err := bbb.GetParticipantsCount(server.ServerName)
 	if err != nil {
@@ -145,70 +148,55 @@ func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ScaleR
 		},
 	}
 
-	// Rule 1: Scale up cpu if current cpu is below configured minimum for the service
+	// Scaling rules:
+	// 1. Scale up if current resource is below configured minimum
+	// 2. Scale up if current resource usage exceeds maximum usage
+	// Add enough resources to either reach usage below the maximum usage or the maximum amount of resources
+	// 3. Scale down to the configured minimum if there are no participants
+
+	// Rule 1 CPU
 	if server.ServerCpu < int32(bbb.Config.Resources.Cpu.MinCores) {
 		targetResource.Cpu.Direction = s.ScaleUp
-		targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 1"
-		targetResource.Cpu.Amount = int32(bbb.Config.Resources.Cpu.MinCores)
+		targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 1: resource below minimum"
+		targetResource.Cpu.Amount = int32(bbb.Config.Resources.Cpu.MinCores) - server.ServerCpu
 	}
 
-	// Rule 2: Scale up cpu if current cpu usage is above configured maximum usage for the service
-	// Scale up to either reach cpu usage below the configured maximum usage or to the configured maximum cpu
+	// Rule 2 CPU
 	if cpuMaxUsageDelta := server.ServerCpuUsage - bbb.Config.Resources.Cpu.MaxUsage; cpuMaxUsageDelta > 0 && server.ServerCpu < int32(bbb.Config.Resources.Cpu.MaxCores) {
 		targetResource.Cpu.Direction = s.ScaleUp
-		targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 2"
+		targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 2: usage above maximum"
 		cpuInc := cpuMaxUsageDelta * float32(server.ServerCpu) / server.ServerCpuUsage
 		targetHeuristic := server.ServerCpu + int32(math.Ceil(float64(cpuInc)))
-		targetResource.Cpu.Amount = int32(math.Min(float64(targetHeuristic), float64((bbb.Config.Resources.Cpu.MaxCores))))
+		targetResource.Cpu.Amount = int32(math.Min(float64(targetHeuristic), float64((bbb.Config.Resources.Cpu.MaxCores)))) - server.ServerCpu
 	}
 
-	// Rule 3: RuleScale down cpu if current cpu usage is below configured minimum usage for the service
-	if cpuMinUsageDelta := server.ServerCpuUsage - bbb.Config.Resources.Cpu.MinUsage; cpuMinUsageDelta < 0 && server.ServerCpu > int32(bbb.Config.Resources.Cpu.MinCores) {
-		targetResource.Cpu.Direction = s.ScaleDown
-		targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 3"
-		cpuDec := cpuMinUsageDelta * float32(server.ServerCpu) / server.ServerCpuUsage
-		targetHeuristic := server.ServerCpu + int32(math.Floor(float64(cpuDec)))
-		targetResource.Cpu.Amount = int32(math.Max(float64(targetHeuristic), float64((bbb.Config.Resources.Cpu.MinCores))))
-	}
-
-	// Rule 4: Scale up memory if current ram is below configured minimum for the service
+	// Rule 1 memory
 	if server.ServerRam < int32(bbb.Config.Resources.Memory.MinBytes) {
 		targetResource.Mem.Direction = s.ScaleUp
-		targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 4"
-		targetResource.Mem.Amount = int32(bbb.Config.Resources.Memory.MinBytes)
+		targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 1: resource below minimum"
+		targetResource.Mem.Amount = int32(bbb.Config.Resources.Memory.MinBytes) - server.ServerRam
 	}
 
-	// Rule 5: Scale up memory if current ram usage is above configured maximum usage for the service
-	// Scale up to either reach ram usage below the configured maximum usage or to the configured maximum memory
+	// Rule 2 memory
 	if memMaxUsageDelta := server.ServerRamUsage - bbb.Config.Resources.Memory.MaxUsage; memMaxUsageDelta > 0 && server.ServerRam < int32(bbb.Config.Resources.Memory.MaxBytes) {
 		targetResource.Mem.Direction = s.ScaleUp
-		targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 5"
+		targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 2: usage above maximum"
 		memInc := memMaxUsageDelta * float32(server.ServerRam) / server.ServerRamUsage
 		targetHeuristic := server.ServerRam + int32(math.Ceil(float64(memInc)))
-		targetResource.Mem.Amount = int32(math.Min(float64(targetHeuristic), float64((bbb.Config.Resources.Memory.MaxBytes))))
+		targetResource.Mem.Amount = int32(math.Min(float64(targetHeuristic), float64((bbb.Config.Resources.Memory.MaxBytes)))) - server.ServerRam
 	}
 
-	// Rule 6: Scale down memory if current ram usage is below configured minimum usage for the service
-	// Scale down to either reach ram usage above the configured minimum usage or to the configured minimum memory
-	if memMinUsageDelta := server.ServerRamUsage - bbb.Config.Resources.Memory.MinUsage; memMinUsageDelta < 0 && server.ServerRam > int32(bbb.Config.Resources.Memory.MinBytes) {
-		targetResource.Mem.Direction = s.ScaleDown
-		targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 6"
-		memDec := memMinUsageDelta * float32(server.ServerRam) / server.ServerRamUsage
-		targetHeuristic := server.ServerRam + int32(math.Floor(float64(memDec)))
-		targetResource.Mem.Amount = int32(math.Max(float64(targetHeuristic), float64((bbb.Config.Resources.Memory.MinBytes))))
-	}
-
-	// Rule 7: Scale down resources to the configured minimum if there are no participants
+	// Rule 3 CPU and memory
 	if participantsCount == 0 {
 		if server.ServerRam > int32(bbb.Config.Resources.Memory.MinBytes) {
 			targetResource.Mem.Direction = s.ScaleDown
-			targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 7"
-			targetResource.Mem.Amount = server.ServerRam - int32(bbb.Config.Resources.Memory.MinBytes)
+			targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 3: no participants"
+			targetResource.Mem.Amount = int32(bbb.Config.Resources.Memory.MinBytes) - server.ServerRam
 		}
 		if server.ServerCpu > int32(bbb.Config.Resources.Cpu.MinCores) {
 			targetResource.Cpu.Direction = s.ScaleDown
-			targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 7"
-			targetResource.Cpu.Amount = server.ServerCpu - int32(bbb.Config.Resources.Cpu.MinCores)
+			targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 3: no participants"
+			targetResource.Cpu.Amount = int32(bbb.Config.Resources.Cpu.MinCores) - server.ServerCpu
 		}
 	}
 

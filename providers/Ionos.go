@@ -97,6 +97,7 @@ func addServer(servers *[]s.Server, dcServer ic.Server, datacenterId string) {
 		ServerCpuUsage:  0,
 		ServerRamUsage:  0,
 		LastUpdated:     time.Now(),
+		Ready:           *dcServer.Properties.VmState == "RUNNING" && *dcServer.Metadata.State == "AVAILABLE",
 	})
 }
 
