@@ -6,6 +6,7 @@ import (
 	"scaler/providers"
 	"scaler/services"
 	s "scaler/shared"
+	"time"
 )
 
 type ScalerApp struct {
@@ -119,62 +120,72 @@ func initMetricsSource(t *s.MetricsSourceType, configFile []byte) (*s.MetricsSou
 	return nil, fmt.Errorf("unknown metrics type: %s", *t)
 }
 
-func (sc *ScalerApp) Scale() {
-	cyclesCounter.Inc()
-
-	servers, err := sc.provider.GetServers(1)
+func (sc ScalerApp) scaleServer(server s.Server) error {
+	var err error
+	server.ServerCpuUsage, err = sc.metricsSource.GetServerCpuUsage(server.ServerName)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("error while getting cpu usage for server %s: %s", server.ServerName, err)
+	}
+	server.ServerRamUsage, err = sc.metricsSource.GetServerMemoryUsage(server.ServerName)
+	if err != nil {
+		return fmt.Errorf("Error while getting memory usage for server %s: %s\n", server.ServerName, err)
 	}
 
-	go sc.calculateMetrics(servers)
+	// Get scaling proposal from service
+	scalingProposal, err := sc.service.ShouldScale(server)
+	fmt.Printf("Scaling proposal for %+v: %+v\n", server.ServerName, scalingProposal)
+	if err != nil {
+		return fmt.Errorf("Error while getting scaling proposal for server %s: %s\n", server.ServerName, err)
+	}
 
-	for _, server := range servers {
+	// Scale
+	// Override heuristic target resource
+	if sc.appDefinition.ScalingMode == s.DirectScaling {
+		// Scale up CPU
+		if scalingProposal.Cpu.Direction == s.ScaleUp {
+			scalingProposal.Cpu.Amount = cpuIncrease
+		}
+		// Scale up RAM
+		if scalingProposal.Mem.Direction == s.ScaleUp {
+			scalingProposal.Mem.Amount = memIncrease
+		}
+		// Scale down CPU
+		if scalingProposal.Cpu.Direction == s.ScaleDown {
+			scalingProposal.Cpu.Amount = cpuDecrease
+		}
+		// Scale down RAM
+		if scalingProposal.Mem.Direction == s.ScaleDown {
+			scalingProposal.Mem.Amount = memDecrease
+		}
+	}
 
-		// Get current resource usage
-		server.ServerCpuUsage, err = sc.metricsSource.GetServerCpuUsage(server.ServerName)
-		if err != nil {
-			panic(err)
-		}
-		server.ServerRamUsage, err = sc.metricsSource.GetServerMemoryUsage(server.ServerName)
-		if err != nil {
-			// TODO: Should be possible to recover from this, at least for a couple of cycles
-			panic(err)
-		}
-
-		// Get scaling proposal from service
-		scalingProposal, err := sc.service.ShouldScale(server)
-		if err != nil {
-			panic(err)
-		}
-
-		// Scale
-		// Override heuristic target resource
-		if sc.appDefinition.ScalingMode == s.DirectScaling {
-			// Scale up CPU
-			if scalingProposal.Cpu.Direction == s.ScaleUp {
-				scalingProposal.Cpu.Amount = cpuIncrease
-			}
-			// Scale up RAM
-			if scalingProposal.Mem.Direction == s.ScaleUp {
-				scalingProposal.Mem.Amount = memIncrease
-			}
-			// Scale down CPU
-			if scalingProposal.Cpu.Direction == s.ScaleDown {
-				scalingProposal.Cpu.Amount = cpuDecrease
-			}
-			// Scale down RAM
-			if scalingProposal.Mem.Direction == s.ScaleDown {
-				scalingProposal.Mem.Amount = memDecrease
-			}
-		}
-		fmt.Printf("Scaling proposal for %+v: %+v\n", server.ServerName, scalingProposal)
-
-		err = sc.provider.SetServerResources(server, scalingProposal)
-		if err != nil {
-			panic(err)
-		}
-		// Placeholder to have metrics
+	err = sc.provider.SetServerResources(server, scalingProposal)
+	if err != nil {
+		return fmt.Errorf("Error while setting resources for server %s: %s\n", server.ServerName, err)
+	}
+	if scalingProposal.Cpu.Direction != s.ScaleNone || scalingProposal.Mem.Direction != s.ScaleNone {
 		lastScaleTimeGauge.SetToCurrentTime()
+	}
+	return nil
+}
+
+func (sc *ScalerApp) Scale() {
+	for {
+		cyclesCounter.Inc()
+
+		servers, err := sc.provider.GetServers(1)
+		if err != nil {
+			fmt.Println("Error while getting servers: ", err)
+		}
+
+		go sc.calculateMetrics(servers)
+
+		for _, server := range servers {
+			err := sc.scaleServer(server)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+		time.Sleep(time.Duration(sc.service.GetCycleTimeSeconds()) * time.Second)
 	}
 }

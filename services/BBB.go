@@ -121,6 +121,10 @@ func (bbb BBBService) GetResources() s.Resources {
 	return bbb.Config.Resources
 }
 
+func (bbb BBBService) GetCycleTimeSeconds() int {
+	return bbb.Config.CycleTimeSeconds
+}
+
 func (bbb BBBService) ShouldScale(server s.Server) (s.ScaleResource, error) {
 	if !server.Ready {
 		return s.ScaleResource{}, fmt.Errorf("server %s is not ready", server.ServerName)
