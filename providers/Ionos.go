@@ -103,12 +103,19 @@ func addServer(servers *[]s.Server, dcServer ic.Server, datacenterId string) {
 		ServerCpuUsage:  0,
 		ServerRamUsage:  0,
 		LastUpdated:     time.Now(),
+		Ready:           *dcServer.Properties.VmState == "RUNNING" && *dcServer.Metadata.State == "AVAILABLE",
 	})
 }
 
 func (i Ionos) SetServerResources(server s.Server, scalingProposal s.ScaleResource) error {
-	if scalingProposal.Cpu.Direction == s.ScaleUp && scalingProposal.Mem.Direction == s.ScaleDown || scalingProposal.Cpu.Direction == s.ScaleDown && scalingProposal.Mem.Direction == s.ScaleUp {
-		return fmt.Errorf("cannot scale cpu and memory in opposite directions")
+	// When scaling in different directions, scaling up overrides scaling down
+	if scalingProposal.Cpu.Direction == s.ScaleUp && scalingProposal.Mem.Direction == s.ScaleDown {
+		scalingProposal.Mem.Direction = s.ScaleNone
+		scalingProposal.Mem.Amount = 0
+	}
+	if scalingProposal.Cpu.Direction == s.ScaleDown && scalingProposal.Mem.Direction == s.ScaleUp {
+		scalingProposal.Cpu.Direction = s.ScaleNone
+		scalingProposal.Cpu.Amount = 0
 	}
 
 	if scalingProposal.Cpu.Direction == s.ScaleNone && scalingProposal.Mem.Direction == s.ScaleNone {
