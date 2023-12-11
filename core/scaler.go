@@ -16,7 +16,7 @@ type ScalerApp struct {
 	metricsSource s.MetricsSource
 }
 
-// TODO: make these configurable
+// Fallback values for direct scaling
 var memIncrease int32 = 1024
 var memDecrease int32 = -1024
 var cpuIncrease int32 = 1
@@ -29,12 +29,20 @@ func InitApp(configPath string) (*ScalerApp, error) {
 	}
 
 	app, err := s.LoadConfig[s.AppDefinition](configFile)
-	if app.ScalingMode == "" {
-		app.ScalingMode = s.DirectScaling
-	}
+
 	if err != nil {
 		return nil, fmt.Errorf("error while loading app config: %s", err)
 	}
+	if app.ScalingMode == "" {
+		app.ScalingMode = s.DirectScaling
+		app.DirectScalingConfig = s.DirectScalingConfig{
+			CpuIncrease: cpuIncrease,
+			CpuDecrease: cpuDecrease,
+			MemIncrease: memIncrease,
+			MemDecrease: memDecrease,
+		}
+	}
+	fmt.Printf("App config: %+v\n", app)
 
 	service, err := initService(&app.ServiceType, configFile)
 	if err != nil {

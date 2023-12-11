@@ -166,7 +166,7 @@ func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ScaleR
 	}
 
 	// Rule 2 CPU
-	if cpuMaxUsageDelta := server.ServerCpuUsage - bbb.Config.Resources.Cpu.MaxUsage; cpuMaxUsageDelta > 0 && server.ServerCpu < int32(bbb.Config.Resources.Cpu.MaxCores) {
+	if cpuMaxUsageDelta := server.ServerCpuUsage - bbb.Config.Resources.Cpu.MaxUsage; cpuMaxUsageDelta > 0 && server.ServerCpu <= int32(bbb.Config.Resources.Cpu.MaxCores) {
 		targetResource.Cpu.Direction = s.ScaleUp
 		targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 2: usage above maximum"
 		cpuInc := cpuMaxUsageDelta * float32(server.ServerCpu) / server.ServerCpuUsage
@@ -182,7 +182,7 @@ func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ScaleR
 	}
 
 	// Rule 2 memory
-	if memMaxUsageDelta := server.ServerRamUsage - bbb.Config.Resources.Memory.MaxUsage; memMaxUsageDelta > 0 && server.ServerRam < int32(bbb.Config.Resources.Memory.MaxBytes) {
+	if memMaxUsageDelta := server.ServerRamUsage - bbb.Config.Resources.Memory.MaxUsage; memMaxUsageDelta > 0 && server.ServerRam <= int32(bbb.Config.Resources.Memory.MaxBytes) {
 		targetResource.Mem.Direction = s.ScaleUp
 		targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 2: usage above maximum"
 		memInc := memMaxUsageDelta * float32(server.ServerRam) / server.ServerRamUsage
@@ -192,12 +192,12 @@ func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ScaleR
 
 	// Rule 3 CPU and memory
 	if participantsCount == 0 {
-		if server.ServerRam > int32(bbb.Config.Resources.Memory.MinBytes) {
+		if server.ServerRam >= int32(bbb.Config.Resources.Memory.MinBytes) {
 			targetResource.Mem.Direction = s.ScaleDown
 			targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 3: no participants"
 			targetResource.Mem.Amount = int32(bbb.Config.Resources.Memory.MinBytes) - server.ServerRam
 		}
-		if server.ServerCpu > int32(bbb.Config.Resources.Cpu.MinCores) {
+		if server.ServerCpu >= int32(bbb.Config.Resources.Cpu.MinCores) {
 			targetResource.Cpu.Direction = s.ScaleDown
 			targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 3: no participants"
 			targetResource.Cpu.Amount = int32(bbb.Config.Resources.Cpu.MinCores) - server.ServerCpu
