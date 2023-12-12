@@ -177,19 +177,27 @@ func (sc *ScalerApp) Scale() {
 	for {
 		cyclesCounter.Inc()
 
-		servers, err := sc.provider.GetServers(1)
+		scaledObjects, err := sc.provider.GetScaledObjects()
+		//servers, err := sc.provider.GetServers(1)
 		if err != nil {
 			slog.Error(fmt.Sprint("Error while getting servers: ", err))
 		}
 
-		go sc.calculateMetrics(servers)
+		//go sc.calculateMetrics(servers)
 
-		for _, server := range servers {
-			err := sc.scaleServer(server)
+		for _, scaledObject := range scaledObjects {
+			var err error
+			switch scaledObject.GetType() {
+			case s.ServerType:
+				server := scaledObject.(s.Server)
+				err = sc.scaleServer(server)
+			default:
+				slog.Error(fmt.Sprintf("Unknown scaled object type: %s", scaledObject.GetType()))
+			}
 			if err != nil {
 				slog.Error(err.Error())
 			}
+			time.Sleep(time.Duration(sc.service.GetCycleTimeSeconds()) * time.Second)
 		}
-		time.Sleep(time.Duration(sc.service.GetCycleTimeSeconds()) * time.Second)
 	}
 }
