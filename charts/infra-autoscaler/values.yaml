@@ -21,6 +21,8 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
+automountServiceAccountToken: false
+
 podAnnotations: {}
 
 podSecurityContext: {}
@@ -33,7 +35,7 @@ securityContext:
     - ALL
   readOnlyRootFilesystem: true
   runAsNonRoot: true
-  runAsUser: 1000
+  runAsUser: 10000
 
 podMonitor:
   create: true
