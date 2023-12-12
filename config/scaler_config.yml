@@ -1,18 +1,16 @@
-app_name: bbb-scaler
+app_name: postgres-scaler
 stage: prod
 scaling_mode: direct
-service_type: BBB
+service_type: Postgres
 provider_type: Ionos
 metrics_source_type: Prometheus
 ionos_config:
   username: $IONOS_USERNAME
   password: $IONOS_PASSWORD
   contract_id: $IONOS_CONTRACT_ID
-  server_source:
-    dynamic:
-      datacenter_ids: [UUID]
-      server_name_regex: "bbb-.*"
-bbb_config:
+  cluster_source:
+    cluster_name_regex: "ionos-dbaas*"
+postgres_config:
   resources:
     cpu:
       min_cores: 4
@@ -25,7 +23,6 @@ bbb_config:
       max_bytes: 32768
       max_usage: 0.7
   cycle_time_seconds: 60
-  api_token: $BBB_API_TOKEN
 prometheus_config:
   url: https://grafana.example.com/api/datasources/proxy/uid/<uid>/
   token: $GRAFANA_TOKEN

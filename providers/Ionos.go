@@ -11,10 +11,11 @@ import (
 )
 
 type ProviderConfig struct {
-	Username     s.StringFromEnv `yaml:"username"`
-	Password     s.StringFromEnv `yaml:"password"`
-	ContractId   s.IntFromEnv    `yaml:"contract_id"`
-	ServerSource *s.ServerSource `yaml:"server_source"`
+	Username      s.StringFromEnv  `yaml:"username"`
+	Password      s.StringFromEnv  `yaml:"password"`
+	ContractId    s.IntFromEnv     `yaml:"contract_id"`
+	ServerSource  *s.ServerSource  `yaml:"server_source"`
+	ClusterSource *s.ClusterSource `yaml:"cluster_source"`
 }
 
 type Ionos struct {
@@ -40,7 +41,7 @@ func (i *Ionos) Init() error {
 	return nil
 }
 
-func (i Ionos) GetServers(depth int) ([]s.Server, error) {
+func (i Ionos) getServers(depth int) ([]s.Server, error) {
 	var servers []s.Server
 	var err error
 
@@ -139,6 +140,13 @@ func (i Ionos) SetServerResources(server s.Server, scalingProposal s.ScaleResour
 	return nil
 }
 
+func (i Ionos) getClusters() ([]s.Cluster, error) {
+	var clusters []s.Cluster
+	var err error
+
+	return clusters, err
+}
+
 func validateServer(server ic.Server, contract ic.Contract) bool {
 	if *server.Properties.Cores > *contract.Properties.ResourceLimits.CoresPerServer || *server.Properties.Ram > *contract.Properties.ResourceLimits.RamPerServer {
 		return false
@@ -155,11 +163,22 @@ func (i Ionos) Validate() error {
 		return fmt.Errorf("password is empty")
 	}
 
-	if i.Config.ServerSource == nil {
-		return fmt.Errorf("server_source is nil")
+	if i.Config.ServerSource == nil && i.Config.ClusterSource == nil {
+		return fmt.Errorf("no scaled object source provided")
+	} else if i.Config.ServerSource != nil && i.Config.ClusterSource != nil {
+		return fmt.Errorf("both server and cluster source provided, only one must be set")
 	} else {
-		if err := i.Config.ServerSource.Validate(); err != nil {
-			return err
+		if i.Config.ServerSource != nil {
+			err := i.Config.ServerSource.Validate()
+			if err != nil {
+				return err
+			}
+		}
+		if i.Config.ClusterSource != nil {
+			err := i.Config.ClusterSource.Validate()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -180,4 +199,27 @@ func validateAndLoadContract(i *Ionos) error {
 		}
 	}
 	return fmt.Errorf("contract_id %d not found", i.Config.ContractId)
+}
+
+func (i Ionos) GetScaledObjects() ([]s.ScaledObject, error) {
+	var scaledObjects []s.ScaledObject
+	if i.Config.ServerSource != nil {
+		servers, err := i.getServers(1)
+		if err != nil {
+			return nil, fmt.Errorf("error while getting servers: %s", err)
+		}
+		for _, server := range servers {
+			scaledObjects = append(scaledObjects, server)
+		}
+	}
+	if i.Config.ClusterSource != nil {
+		clusters, err := i.getClusters()
+		if err != nil {
+			return nil, fmt.Errorf("error while getting clusters: %s", err)
+		}
+		for _, cluster := range clusters {
+			scaledObjects = append(scaledObjects, cluster)
+		}
+	}
+	return scaledObjects, nil
 }
