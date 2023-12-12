@@ -1,0 +1,19 @@
+{{- if .Values.podMonitor.create -}}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ include "infra-autoscaler.fullname" . }}
+  labels:
+    {{- include "infra-autoscaler.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "infra-autoscaler.selectorLabels" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      scheme: http
+{{- end }}
