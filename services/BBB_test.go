@@ -206,7 +206,7 @@ func TestRule2Cpu(t *testing.T) {
 
 	// Current resources
 	server := s.Server{
-		ServerCpu:      4,
+		ServerCpu:      2,
 		ServerRam:      1024,
 		ServerCpuUsage: 0.8,
 		ServerRamUsage: 0.5,
@@ -291,7 +291,7 @@ func TestRule2Mem(t *testing.T) {
 	// Current resources
 	server := s.Server{
 		ServerCpu:      2,
-		ServerRam:      4096,
+		ServerRam:      2048,
 		ServerCpuUsage: 0.5,
 		ServerRamUsage: 0.8,
 	}
@@ -332,7 +332,7 @@ func TestRule3(t *testing.T) {
 
 	// Current resources
 	server := s.Server{
-		ServerCpu:      2,
+		ServerCpu:      4,
 		ServerRam:      4096,
 		ServerCpuUsage: 0.5,
 		ServerRamUsage: 0.7,
