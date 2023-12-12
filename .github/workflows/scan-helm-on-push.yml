@@ -1,0 +1,14 @@
+name: "Scan Helm on push"
+
+on:
+  push:
+
+concurrency:
+  group: infra-autoscaler-scan-helm-${{ github.event.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan_helm:
+    uses: dBildungsplattform/dbp-github-workflows/.github/workflows/check-helm-kics.yaml@4.0.0
+    permissions:
+      contents: read
