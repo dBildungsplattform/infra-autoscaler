@@ -108,3 +108,245 @@ func TestSignedBBBAPIRequest(t *testing.T) {
 		t.Fatalf("Expected %s but got %s", expected, got)
 	}
 }
+
+func TestRuleDefault(t *testing.T) {
+	bbb := BBBService{
+		Config: BBBServiceConfig{
+			Resources: s.Resources{
+				Cpu: &s.CpuResources{
+					MinCores: 1,
+					MaxCores: 2,
+					MaxUsage: 0.7,
+				},
+				Memory: &s.MemoryResources{
+					MinBytes: 1024,
+					MaxBytes: 2048,
+					MaxUsage: 0.7,
+				},
+			},
+		},
+	}
+	server := s.Server{
+		ServerCpu:      1,
+		ServerRam:      1024,
+		ServerCpuUsage: 0.5,
+		ServerRamUsage: 0.5,
+	}
+	participants := 2
+
+	scaleProp := applyRules(server, participants, bbb)
+
+	if scaleProp.Cpu.Direction != s.ScaleNone {
+		t.Fatalf("Expected cpu direction to be none but got %s", scaleProp.Cpu.Direction)
+	}
+
+	if scaleProp.Mem.Direction != s.ScaleNone {
+		t.Fatalf("Expected mem direction to be none but got %s", scaleProp.Mem.Direction)
+	}
+}
+
+func TestRule1Cpu(t *testing.T) {
+	// Target resources
+	bbb := BBBService{
+		Config: BBBServiceConfig{
+			Resources: s.Resources{
+				Cpu: &s.CpuResources{
+					MinCores: 2,
+					MaxCores: 4,
+					MaxUsage: 0.7,
+				},
+				Memory: &s.MemoryResources{
+					MinBytes: 1024,
+					MaxBytes: 2048,
+					MaxUsage: 0.7,
+				},
+			},
+		},
+	}
+
+	// Current resources
+	server := s.Server{
+		ServerCpu:      1,
+		ServerRam:      1024,
+		ServerCpuUsage: 0.5,
+		ServerRamUsage: 0.5,
+	}
+	participants := 10
+
+	// Test
+	scaleProp := applyRules(server, participants, bbb)
+
+	if scaleProp.Cpu.Direction != s.ScaleUp {
+		t.Fatalf("Expected cpu direction to be up but got %s", scaleProp.Cpu.Direction)
+	}
+
+	if scaleProp.Mem.Direction != s.ScaleNone {
+		t.Fatalf("Expected mem direction to be none but got %s", scaleProp.Mem.Direction)
+	}
+}
+
+func TestRule2Cpu(t *testing.T) {
+	// Target resources
+	bbb := BBBService{
+		Config: BBBServiceConfig{
+			Resources: s.Resources{
+				Cpu: &s.CpuResources{
+					MinCores: 2,
+					MaxCores: 4,
+					MaxUsage: 0.7,
+				},
+				Memory: &s.MemoryResources{
+					MinBytes: 1024,
+					MaxBytes: 2048,
+					MaxUsage: 0.7,
+				},
+			},
+		},
+	}
+
+	// Current resources
+	server := s.Server{
+		ServerCpu:      2,
+		ServerRam:      1024,
+		ServerCpuUsage: 0.8,
+		ServerRamUsage: 0.5,
+	}
+	participants := 2
+
+	// Test
+	scaleProp := applyRules(server, participants, bbb)
+
+	if scaleProp.Cpu.Direction != s.ScaleUp {
+		t.Fatalf("Expected cpu direction to be up but got %s", scaleProp.Cpu.Direction)
+	}
+
+	if scaleProp.Mem.Direction != s.ScaleNone {
+		t.Fatalf("Expected mem direction to be none but got %s", scaleProp.Mem.Direction)
+	}
+}
+
+func TestRule1Mem(t *testing.T) {
+	// Target resources
+	bbb := BBBService{
+		Config: BBBServiceConfig{
+			Resources: s.Resources{
+				Cpu: &s.CpuResources{
+					MinCores: 2,
+					MaxCores: 4,
+					MinUsage: 0.3,
+					MaxUsage: 0.7,
+				},
+				Memory: &s.MemoryResources{
+					MinBytes: 2048,
+					MaxBytes: 4096,
+					MinUsage: 0.3,
+					MaxUsage: 0.7,
+				},
+			},
+		},
+	}
+
+	// Current resources
+	server := s.Server{
+		ServerCpu:      2,
+		ServerRam:      1024,
+		ServerCpuUsage: 0.5,
+		ServerRamUsage: 0.5,
+	}
+	participants := 2
+
+	// Test
+	scaleProp := applyRules(server, participants, bbb)
+
+	if scaleProp.Cpu.Direction != s.ScaleNone {
+		t.Fatalf("Expected cpu direction to be none but got %s", scaleProp.Cpu.Direction)
+	}
+
+	if scaleProp.Mem.Direction != s.ScaleUp {
+		t.Fatalf("Expected mem direction to be up but got %s", scaleProp.Mem.Direction)
+	}
+}
+
+func TestRule2Mem(t *testing.T) {
+	// Target resources
+	bbb := BBBService{
+		Config: BBBServiceConfig{
+			Resources: s.Resources{
+				Cpu: &s.CpuResources{
+					MinCores: 2,
+					MaxCores: 4,
+					MinUsage: 0.3,
+					MaxUsage: 0.7,
+				},
+				Memory: &s.MemoryResources{
+					MinBytes: 2048,
+					MaxBytes: 4096,
+					MinUsage: 0.3,
+					MaxUsage: 0.7,
+				},
+			},
+		},
+	}
+
+	// Current resources
+	server := s.Server{
+		ServerCpu:      2,
+		ServerRam:      2048,
+		ServerCpuUsage: 0.5,
+		ServerRamUsage: 0.8,
+	}
+	participants := 2
+
+	// Test
+	scaleProp := applyRules(server, participants, bbb)
+
+	if scaleProp.Cpu.Direction != s.ScaleNone {
+		t.Fatalf("Expected cpu direction to be none but got %s", scaleProp.Cpu.Direction)
+	}
+
+	if scaleProp.Mem.Direction != s.ScaleUp {
+		t.Fatalf("Expected mem direction to be up but got %s", scaleProp.Mem.Direction)
+	}
+}
+
+func TestRule3(t *testing.T) {
+	// Target resources
+	bbb := BBBService{
+		Config: BBBServiceConfig{
+			Resources: s.Resources{
+				Cpu: &s.CpuResources{
+					MinCores: 2,
+					MaxCores: 4,
+					MinUsage: 0.3,
+					MaxUsage: 0.7,
+				},
+				Memory: &s.MemoryResources{
+					MinBytes: 2048,
+					MaxBytes: 4096,
+					MinUsage: 0.3,
+					MaxUsage: 0.7,
+				},
+			},
+		},
+	}
+
+	// Current resources
+	server := s.Server{
+		ServerCpu:      4,
+		ServerRam:      4096,
+		ServerCpuUsage: 0.5,
+		ServerRamUsage: 0.7,
+	}
+	participants := 0
+
+	// Test
+	scaleProp := applyRules(server, participants, bbb)
+
+	if scaleProp.Cpu.Direction != s.ScaleDown {
+		t.Fatalf("Expected cpu direction to be down but got %s", scaleProp.Cpu.Direction)
+	}
+
+	if scaleProp.Mem.Direction != s.ScaleDown {
+		t.Fatalf("Expected mem direction to be down but got %s", scaleProp.Mem.Direction)
+	}
+}

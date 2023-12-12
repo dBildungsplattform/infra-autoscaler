@@ -1,6 +1,10 @@
 app_name: bbb-scaler
 stage: prod
-scaling_mode: direct
+direct_scaling_config:
+  cpu_increase: 1
+  cpu_decrease: -1
+  mem_increase: 1024
+  mem_decrease: -1024
 service_type: BBB
 provider_type: Ionos
 metrics_source_type: Prometheus
@@ -10,14 +14,14 @@ ionos_config:
   contract_id: $IONOS_CONTRACT_ID
   server_source:
     dynamic:
-      datacenter_ids: [UUID]
+      datacenter_ids: [uuid]
       server_name_regex: "bbb-.*"
 bbb_config:
   resources:
     cpu:
-      min_cores: 4
+      min_cores: 4 
       min_usage: 0.3
-      max_cores: 16
+      max_cores: 8 
       max_usage: 0.7
     memory:
       min_bytes: 12288
