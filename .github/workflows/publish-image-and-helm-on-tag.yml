@@ -18,7 +18,7 @@ jobs:
     uses: dBildungsplattform/dbp-github-workflows/.github/workflows/image-publish-trivy.yaml@2.0.0
     with:
       image_name: "infra-autoscaler"
-      run_trivy_scan: false
+      run_trivy_scan: true
       tag_generation: "version_git_tag"
       add_latest_tag: true
       container_registry: "ghcr.io"
