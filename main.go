@@ -2,8 +2,9 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	c "scaler/core"
+
+	"golang.org/x/exp/slog"
 )
 
 func main() {
@@ -15,5 +16,5 @@ func main() {
 		panic(err)
 	}
 	go app.Scale()
-	fmt.Println(app.ServeMetrics())
+	slog.Error(app.ServeMetrics().Error())
 }
