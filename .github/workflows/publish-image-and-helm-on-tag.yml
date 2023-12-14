@@ -1,4 +1,4 @@
-name: 'Publish image to GHCR on tag'
+name: 'Publish image to GHCR and Helm chart to GH pages on tag'
 
 on:
   push:
@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build_and_push:
+  publish_docker:
     permissions:
       packages: write
       security-events: write
@@ -18,7 +18,16 @@ jobs:
     uses: dBildungsplattform/dbp-github-workflows/.github/workflows/image-publish-trivy.yaml@2.0.0
     with:
       image_name: "infra-autoscaler"
-      run_trivy_scan: false
+      run_trivy_scan: true
       tag_generation: "version_git_tag"
       add_latest_tag: true
       container_registry: "ghcr.io"
+  publish_helm:
+    uses: dBildungsplattform/dbp-github-workflows/.github/workflows/chart-release.yaml@4.0.0
+    secrets: inherit
+    with:
+      chart_name: infra-autoscaler
+      helm_chart_version_generation: specified
+      image_tag_generation: specified
+      helm_chart_version: ${{ github.ref_name }}
+      image_tag: ${{ github.ref_name }}
