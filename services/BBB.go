@@ -125,7 +125,12 @@ func (bbb BBBService) GetCycleTimeSeconds() int {
 	return bbb.Config.CycleTimeSeconds
 }
 
-func (bbb BBBService) ShouldScale(server s.Server) (s.ScaleResource, error) {
+func (bbb BBBService) ShouldScale(obj s.ScaledObject) (s.ScaleResource, error) {
+	if obj.GetType() != s.ServerType {
+		return s.ScaleResource{}, fmt.Errorf("scaled object %s is not a server resource", obj.GetName())
+	}
+	server := obj.(s.Server)
+
 	if !server.Ready {
 		return s.ScaleResource{}, fmt.Errorf("server %s is not ready", server.ServerName)
 	}
@@ -135,10 +140,6 @@ func (bbb BBBService) ShouldScale(server s.Server) (s.ScaleResource, error) {
 		return s.ScaleResource{}, fmt.Errorf("error while getting participants count: %s", err)
 	}
 
-	return applyRules(server, participantsCount, bbb), nil
-}
-
-func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ScaleResource {
 	targetResource := s.ScaleResource{
 		Cpu: s.ScaleOp{
 			Direction: s.ScaleNone,
@@ -151,6 +152,13 @@ func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ScaleR
 			Amount:    0,
 		},
 	}
+
+	bbb.applyRules(&targetResource, server, participantsCount)
+
+	return targetResource, nil
+}
+
+func (bbb BBBService) applyRules(targetResource *s.ScaleResource, server s.Server, participantsCount int) {
 
 	// Scaling rules:
 	// 1. Scale up if current resource is below configured minimum
@@ -203,8 +211,6 @@ func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ScaleR
 			targetResource.Cpu.Amount = int32(bbb.Config.Resources.Cpu.MinCores) - server.ServerCpu
 		}
 	}
-
-	return targetResource
 }
 
 func (service BBBService) Validate() error {

@@ -7,6 +7,8 @@ type MetricsSource interface {
 	Validate() error
 	GetServerCpuUsage(string) (float32, error)
 	GetServerMemoryUsage(string) (float32, error)
+	GetClusterCpuUsage(string) (float32, error)
+	GetClusterMemoryUsage(string) (float32, error)
 }
 
 type MetricsSourceType string

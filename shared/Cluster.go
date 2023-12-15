@@ -11,6 +11,8 @@ type Cluster struct {
 	ClusterName        string    `yaml:"cluster_name"`
 	ClusterCpu         int32     `yaml:"cluster_cpu"`
 	ClusterRam         int32     `yaml:"cluster_ram"`
+	ClusterCpuUsage    float32   `yaml:"cluster_cpu_usage"`
+	ClusterRamUsage    float32   `yaml:"cluster_ram_usage"`
 	ClusterStorageSize int32     `yaml:"cluster_storage_size"`
 	ClusterStorageType string    `yaml:"cluster_storage_type"`
 	LastUpdated        time.Time `yaml:"last_updated"`
@@ -21,8 +23,13 @@ func (c Cluster) GetType() ScaledObjectType {
 	return ClusterType
 }
 
+func (c Cluster) GetName() string {
+	return c.ClusterName
+}
+
 type ClusterSource struct {
-	ClusterNameRegex string `yaml:"cluster_name_regex"`
+	ClusterFilterName string `yaml:"cluster_filter_name"`
+	ClusterNameRegex  string `yaml:"cluster_name_regex"`
 }
 
 func (ionos ClusterSource) Validate() error {

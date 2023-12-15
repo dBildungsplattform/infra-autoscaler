@@ -25,6 +25,6 @@ postgres_config:
       max_usage: 0.7
   cycle_time_seconds: 60
 prometheus_config:
-  url: https://api.ionos.com/telemetry/
+  url: https://api.example.com
   token: $IONOS_TOKEN
 metrics_exporter_port: 9100

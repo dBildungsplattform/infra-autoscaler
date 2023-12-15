@@ -10,7 +10,6 @@ ionos_config:
   contract_id: $IONOS_CONTRACT_ID
   cluster_source:
     cluster_filter_name: ""
-    cluster_name_regex: ".*"
 postgres_config:
   resources:
     cpu:
@@ -23,8 +22,6 @@ postgres_config:
       min_usage: 0.3
       max_bytes: 32768
       max_usage: 0.7
-  cycle_time_seconds: 60
 prometheus_config:
-  url: https://api.ionos.com/telemetry/
-  token: $IONOS_TOKEN
+  url: https://api.example.com
 metrics_exporter_port: 9100

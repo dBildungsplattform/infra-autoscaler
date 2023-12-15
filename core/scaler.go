@@ -128,14 +128,14 @@ func (sc ScalerApp) scaleServer(server s.Server) error {
 	}
 	server.ServerRamUsage, err = sc.metricsSource.GetServerMemoryUsage(server.ServerName)
 	if err != nil {
-		return fmt.Errorf("Error while getting memory usage for server %s: %s\n", server.ServerName, err)
+		return fmt.Errorf("error while getting memory usage for server %s: %s", server.ServerName, err)
 	}
 
 	// Get scaling proposal from service
 	scalingProposal, err := sc.service.ShouldScale(server)
 	fmt.Printf("Scaling proposal for %+v: %+v\n", server.ServerName, scalingProposal)
 	if err != nil {
-		return fmt.Errorf("Error while getting scaling proposal for server %s: %s\n", server.ServerName, err)
+		return fmt.Errorf("error while getting scaling proposal for server %s: %s", server.ServerName, err)
 	}
 
 	// Scale
@@ -159,13 +159,64 @@ func (sc ScalerApp) scaleServer(server s.Server) error {
 		}
 	}
 
-	err = sc.provider.SetServerResources(server, scalingProposal)
+	err = sc.provider.SetScaledObject(server, scalingProposal)
 	if err != nil {
-		return fmt.Errorf("Error while setting resources for server %s: %s\n", server.ServerName, err)
+		return fmt.Errorf("error while setting resources for server %s: %s", server.ServerName, err)
 	}
 	if scalingProposal.Cpu.Direction != s.ScaleNone || scalingProposal.Mem.Direction != s.ScaleNone {
 		lastScaleTimeGauge.SetToCurrentTime()
 	}
+	return nil
+}
+
+func (sc ScalerApp) scaleCluster(cluster s.Cluster) error {
+	var err error
+	cluster.ClusterCpuUsage, err = sc.metricsSource.GetClusterCpuUsage(cluster.ClusterId)
+	fmt.Printf("Cluster CPU usage: %f\n", cluster.ClusterCpuUsage)
+	if err != nil {
+		return fmt.Errorf("error while getting cpu usage for cluster %s: %s", cluster.ClusterName, err)
+	}
+	cluster.ClusterRamUsage, err = sc.metricsSource.GetClusterMemoryUsage(cluster.ClusterId)
+	fmt.Printf("Cluster RAM usage: %f\n", cluster.ClusterRamUsage)
+	if err != nil {
+		return fmt.Errorf("error while getting memory usage for cluster %s: %s", cluster.ClusterName, err)
+	}
+
+	// Get scaling proposal from service
+	scalingProposal, err := sc.service.ShouldScale(cluster)
+	fmt.Printf("Scaling proposal for %+v: %+v\n", cluster.ClusterName, scalingProposal)
+	if err != nil {
+		return fmt.Errorf("error while getting scaling proposal for cluster %s: %s", cluster.ClusterName, err)
+	}
+
+	// Scale
+	// Override heuristic target resource
+	if sc.appDefinition.ScalingMode == s.DirectScaling {
+		// Scale up CPU
+		if scalingProposal.Cpu.Direction == s.ScaleUp {
+			scalingProposal.Cpu.Amount = cpuIncrease
+		}
+		// Scale up RAM
+		if scalingProposal.Mem.Direction == s.ScaleUp {
+			scalingProposal.Mem.Amount = memIncrease
+		}
+		// Scale down CPU
+		if scalingProposal.Cpu.Direction == s.ScaleDown {
+			scalingProposal.Cpu.Amount = cpuDecrease
+		}
+		// Scale down RAM
+		if scalingProposal.Mem.Direction == s.ScaleDown {
+			scalingProposal.Mem.Amount = memDecrease
+		}
+	}
+
+	err = sc.provider.SetScaledObject(cluster, scalingProposal)
+	if err != nil {
+		return fmt.Errorf("Error while setting resources for cluster %s: %s\n", cluster.ClusterName, err)
+	}
+	//if scalingProposal.Cpu.Direction != s.ScaleNone || scalingProposal.Mem.Direction != s.ScaleNone {
+	//	lastScaleTimeGauge.SetToCurrentTime()
+	//}
 	return nil
 }
 
@@ -174,7 +225,7 @@ func (sc *ScalerApp) Scale() {
 		cyclesCounter.Inc()
 
 		scaledObjects, err := sc.provider.GetScaledObjects()
-		//servers, err := sc.provider.GetServers(1)
+		fmt.Printf("Scaled objects: %+v\n", scaledObjects)
 		if err != nil {
 			fmt.Println("Error while getting servers: ", err)
 		}
@@ -182,11 +233,20 @@ func (sc *ScalerApp) Scale() {
 		//go sc.calculateMetrics(servers)
 
 		for _, scaledObject := range scaledObjects {
-			fmt.Printf("Scaled object: %+v\n", scaledObject)
-			//	err := sc.scaleServer(server)
-			//	if err != nil {
-			//		fmt.Println(err)
-			//	}
+			switch scaledObject.GetType() {
+			case s.ServerType:
+				server := scaledObject.(s.Server)
+				err := sc.scaleServer(server)
+				if err != nil {
+					fmt.Println(err)
+				}
+			case s.ClusterType:
+				cluster := scaledObject.(s.Cluster)
+				err := sc.scaleCluster(cluster)
+				if err != nil {
+					fmt.Println(err)
+				}
+			}
 		}
 		time.Sleep(time.Duration(sc.service.GetCycleTimeSeconds()) * time.Second)
 	}
