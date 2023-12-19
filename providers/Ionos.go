@@ -198,8 +198,7 @@ func (i Ionos) applyClusterRegexFilter(clusters *icDbaas.ClusterList, filteredCl
 	if i.Config.ClusterSource.ClusterNameRegex != "" {
 		for _, cluster := range *clusters.Items {
 			if match, _ := regexp.MatchString(i.Config.ClusterSource.ClusterNameRegex, *cluster.Properties.DisplayName); match {
-				fmt.Println("Matched cluster: ", *cluster.Properties.DisplayName)
-				fmt.Println("Cluster regex: ", i.Config.ClusterSource.ClusterNameRegex)
+				slog.Info(fmt.Sprintf("Matched cluster %s\n", *cluster.Properties.DisplayName))
 				addCluster(filteredClusters, cluster)
 			}
 		}
@@ -267,7 +266,7 @@ func (i Ionos) setClusterResources(cluster s.Cluster, scalingProposal s.ScaleRes
 		return fmt.Errorf("cluster is not valid")
 	}
 
-	fmt.Printf("Target for cluster %s: %d cores, %d bytes\n", cluster.ClusterName, *targetCluster.Properties.Cores, *targetCluster.Properties.Ram)
+	slog.Info(fmt.Sprintf("Target for cluster %s: %d cores, %d bytes\n", cluster.ClusterName, *targetCluster.Properties.Cores, *targetCluster.Properties.Ram))
 	//_, _, err := i.DbaasApi.ClustersApi.ClustersPatch(context.TODO(), cluster.ClusterId).PatchClusterRequest(targetCluster).Execute()
 	//if err != nil {
 	//	errorsTotalCounter.Inc()
@@ -363,7 +362,7 @@ func (i Ionos) GetScaledObjects() ([]s.ScaledObject, error) {
 	}
 	if i.Config.ClusterSource != nil {
 		clusters, err := i.getClusters()
-		fmt.Printf("Clusters: %+v\n", clusters)
+		slog.Info(fmt.Sprintf("Clusters: %+v\n", clusters))
 		if err != nil {
 			return nil, fmt.Errorf("error while getting clusters: %s", err)
 		}

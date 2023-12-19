@@ -176,19 +176,18 @@ func (sc ScalerApp) scaleServer(server s.Server) error {
 func (sc ScalerApp) scaleCluster(cluster s.Cluster) error {
 	var err error
 	cluster.ClusterCpuUsage, err = sc.metricsSource.GetClusterCpuUsage(cluster.ClusterId)
-	fmt.Printf("Cluster CPU usage: %f\n", cluster.ClusterCpuUsage)
+	slog.Info(fmt.Sprintf("CPU usage for %s: %f\n", cluster.ClusterName, cluster.ClusterCpuUsage))
 	if err != nil {
 		return fmt.Errorf("error while getting cpu usage for cluster %s: %s", cluster.ClusterName, err)
 	}
 	cluster.ClusterRamUsage, err = sc.metricsSource.GetClusterMemoryUsage(cluster.ClusterId)
-	fmt.Printf("Cluster RAM usage: %f\n", cluster.ClusterRamUsage)
+	slog.Info(fmt.Sprintf("Memory usage for %s: %f\n", cluster.ClusterName, cluster.ClusterRamUsage))
 	if err != nil {
 		return fmt.Errorf("error while getting memory usage for cluster %s: %s", cluster.ClusterName, err)
 	}
 
 	// Get scaling proposal from service
 	scalingProposal, err := sc.service.ShouldScale(cluster)
-	fmt.Printf("Scaling proposal for %+v: %+v\n", cluster.ClusterName, scalingProposal)
 	if err != nil {
 		return fmt.Errorf("error while getting scaling proposal for cluster %s: %s", cluster.ClusterName, err)
 	}
@@ -213,10 +212,11 @@ func (sc ScalerApp) scaleCluster(cluster s.Cluster) error {
 			scalingProposal.Mem.Amount = memDecrease
 		}
 	}
+	slog.Info(fmt.Sprintf("Scaling proposal for %+v: %+v\n", cluster.ClusterName, scalingProposal))
 
 	err = sc.provider.SetScaledObject(cluster, scalingProposal)
 	if err != nil {
-		return fmt.Errorf("Error while setting resources for cluster %s: %s\n", cluster.ClusterName, err)
+		return fmt.Errorf("error while setting resources for cluster %s: %s", cluster.ClusterName, err)
 	}
 	//if scalingProposal.Cpu.Direction != s.ScaleNone || scalingProposal.Mem.Direction != s.ScaleNone {
 	//	lastScaleTimeGauge.SetToCurrentTime()
@@ -229,7 +229,7 @@ func (sc *ScalerApp) Scale() {
 		cyclesCounter.Inc()
 
 		scaledObjects, err := sc.provider.GetScaledObjects()
-		fmt.Printf("Scaled objects: %+v\n", scaledObjects)
+		slog.Info(fmt.Sprintf("Scaled objects: %+v\n", scaledObjects))
 		if err != nil {
 			slog.Error(fmt.Sprint("Error while getting servers: ", err))
 		}

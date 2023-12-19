@@ -49,7 +49,6 @@ func (postgres PostgresService) ShouldScale(obj s.ScaledObject) (s.ScaleResource
 		return s.ScaleResource{}, fmt.Errorf("scaled object %s is not a cluster resource", obj.GetName())
 	}
 	cluster := obj.(s.Cluster)
-	fmt.Printf("Cluster %s has %d CPUs and %d RAM\n", cluster.ClusterName, cluster.ClusterCpu, cluster.ClusterRam)
 
 	targetResource := s.ScaleResource{
 		Cpu: s.ScaleOp{
