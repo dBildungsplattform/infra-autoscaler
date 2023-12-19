@@ -116,3 +116,13 @@ func (p Prometheus) GetServerMemoryUsage(serverName string) (float32, error) {
 	query := p.QueryServerMemoryUsage(serverLabels)
 	return p.Query(query)
 }
+
+func (p Prometheus) GetClusterCpuUsage(clusterName string) (float32, error) {
+	query := fmt.Sprintf("ionos_dbaas_postgres_cpu_rate5m{postgres_cluster=\"%s\", role=\"master\"}", clusterName)
+	return p.Query(query)
+}
+
+func (p Prometheus) GetClusterMemoryUsage(clusterName string) (float32, error) {
+	query := fmt.Sprintf("1 - ionos_dbaas_postgres_memory_available_bytes / ionos_dbaas_postgres_memory_total_bytes{postgres_cluster=\"%s\", role=\"master\"}", clusterName)
+	return p.Query(query)
+}

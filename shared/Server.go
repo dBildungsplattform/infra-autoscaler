@@ -19,6 +19,14 @@ type Server struct {
 	Ready           bool
 }
 
+func (s Server) GetType() ScaledObjectType {
+	return ServerType
+}
+
+func (s Server) GetName() string {
+	return s.ServerName
+}
+
 type ServerSource struct {
 	Static  *ServerStaticSource  `yaml:"static"`
 	Dynamic *ServerDynamicSource `yaml:"dynamic"`

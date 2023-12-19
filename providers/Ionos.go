@@ -7,31 +7,44 @@ import (
 	s "scaler/shared"
 	"time"
 
+	icDbaas "github.com/ionos-cloud/sdk-go-dbaas-postgres"
 	ic "github.com/ionos-cloud/sdk-go/v6"
 	"golang.org/x/exp/slog"
 )
 
 type ProviderConfig struct {
-	Username     s.StringFromEnv `yaml:"username"`
-	Password     s.StringFromEnv `yaml:"password"`
-	ContractId   s.IntFromEnv    `yaml:"contract_id"`
-	ServerSource *s.ServerSource `yaml:"server_source"`
+	Username      s.StringFromEnv  `yaml:"username"`
+	Password      s.StringFromEnv  `yaml:"password"`
+	ContractId    s.IntFromEnv     `yaml:"contract_id"`
+	ServerSource  *s.ServerSource  `yaml:"server_source"`
+	ClusterSource *s.ClusterSource `yaml:"cluster_source"`
 }
 
 type Ionos struct {
-	Config   ProviderConfig `yaml:"ionos_config"`
-	Contract *ic.Contract   `yaml:"-"`
-	Stage    s.Stage        `yaml:"-"`
-	Api      ic.APIClient   `yaml:"-"`
-	Servers  []s.Server     `yaml:"-"`
+	Config   ProviderConfig    `yaml:"ionos_config"`
+	Contract *ic.Contract      `yaml:"-"`
+	Stage    s.Stage           `yaml:"-"`
+	Api      ic.APIClient      `yaml:"-"`
+	DbaasApi icDbaas.APIClient `yaml:"-"`
+	Servers  []s.Server        `yaml:"-"`
+	Clusters []s.Cluster       `yaml:"-"`
 }
 
 func (i *Ionos) Init() error {
+	// go sdk api client
 	i.Api = *ic.NewAPIClient(ic.NewConfiguration(
 		string(i.Config.Username),
 		string(i.Config.Password),
 		"",
 		""))
+
+	// dbaas api client
+	i.DbaasApi = *icDbaas.NewAPIClient(icDbaas.NewConfiguration(
+		string(i.Config.Username),
+		string(i.Config.Password),
+		"",
+		""))
+
 	if err := validateAndLoadContract(i); err != nil {
 		return fmt.Errorf("error while validating contract: %s", err)
 	}
@@ -41,7 +54,7 @@ func (i *Ionos) Init() error {
 	return nil
 }
 
-func (i Ionos) GetServers(depth int) ([]s.Server, error) {
+func (i Ionos) getServers(depth int) ([]s.Server, error) {
 	var servers []s.Server
 	var err error
 
@@ -107,7 +120,25 @@ func addServer(servers *[]s.Server, dcServer ic.Server, datacenterId string) {
 	})
 }
 
-func (i Ionos) SetServerResources(server s.Server, scalingProposal s.ScaleResource) error {
+func (i Ionos) SetScaledObject(obj s.ScaledObject, proposal s.ScaleResource) error {
+	switch obj.GetType() {
+	case s.ServerType:
+		server := obj.(s.Server)
+		err := i.setServerResources(server, proposal)
+		if err != nil {
+			return fmt.Errorf("error while setting resources for server %s: %s", server.ServerName, err)
+		}
+	case s.ClusterType:
+		cluster := obj.(s.Cluster)
+		err := i.setClusterResources(cluster, proposal)
+		if err != nil {
+			return fmt.Errorf("error while setting resources for cluster %s: %s", cluster.ClusterName, err)
+		}
+	}
+	return nil
+}
+
+func (i Ionos) setServerResources(server s.Server, scalingProposal s.ScaleResource) error {
 	// When scaling in different directions, scaling up overrides scaling down
 	if scalingProposal.Cpu.Direction == s.ScaleUp && scalingProposal.Mem.Direction == s.ScaleDown {
 		scalingProposal.Mem.Direction = s.ScaleNone
@@ -145,6 +176,114 @@ func (i Ionos) SetServerResources(server s.Server, scalingProposal s.ScaleResour
 	return nil
 }
 
+func (i Ionos) getFilteredClusters(clusters *icDbaas.ClusterList) error {
+	var err error
+
+	filter := i.Config.ClusterSource.ClusterFilterName
+	if filter == "" {
+		*clusters, _, err = i.DbaasApi.ClustersApi.ClustersGet(context.TODO()).Execute()
+		if err != nil {
+			return fmt.Errorf("error while getting clusters: %s", err)
+		}
+	} else {
+		*clusters, _, err = i.DbaasApi.ClustersApi.ClustersGet(context.TODO()).FilterName(filter).Execute()
+		if err != nil {
+			return fmt.Errorf("error while getting filtered clusters: %s", err)
+		}
+	}
+	return nil
+}
+
+func (i Ionos) applyClusterRegexFilter(clusters *icDbaas.ClusterList, filteredClusters *[]s.Cluster) error {
+	if i.Config.ClusterSource.ClusterNameRegex != "" {
+		for _, cluster := range *clusters.Items {
+			if match, _ := regexp.MatchString(i.Config.ClusterSource.ClusterNameRegex, *cluster.Properties.DisplayName); match {
+				slog.Info(fmt.Sprintf("Matched cluster %s\n", *cluster.Properties.DisplayName))
+				addCluster(filteredClusters, cluster)
+			}
+		}
+	}
+	return nil
+}
+
+func addCluster(scaledClusters *[]s.Cluster, cluster icDbaas.ClusterResponse) {
+	*scaledClusters = append(*scaledClusters, s.Cluster{
+		ClusterId:          *cluster.Id,
+		ClusterName:        *cluster.Properties.DisplayName,
+		ClusterCpu:         *cluster.Properties.Cores,
+		ClusterRam:         *cluster.Properties.Ram,
+		ClusterStorageSize: *cluster.Properties.StorageSize,
+		ClusterStorageType: string(*cluster.Properties.StorageType),
+		LastUpdated:        time.Now(),
+		Ready:              *cluster.Metadata.State == "AVAILABLE",
+	})
+}
+
+func (i Ionos) getClusters() ([]s.Cluster, error) {
+	var filteredClusters icDbaas.ClusterList
+	err := i.getFilteredClusters(&filteredClusters)
+	if err != nil {
+		return nil, err
+	}
+
+	var scaledClusters []s.Cluster
+	err = i.applyClusterRegexFilter(&filteredClusters, &scaledClusters)
+	if err != nil {
+		return nil, err
+	}
+
+	return scaledClusters, err
+}
+
+func (i Ionos) setClusterResources(cluster s.Cluster, scalingProposal s.ScaleResource) error {
+	// When scaling in different directions, scaling up overrides scaling down
+	if scalingProposal.Cpu.Direction == s.ScaleUp && scalingProposal.Mem.Direction == s.ScaleDown {
+		scalingProposal.Mem.Direction = s.ScaleNone
+		scalingProposal.Mem.Amount = 0
+	}
+	if scalingProposal.Cpu.Direction == s.ScaleDown && scalingProposal.Mem.Direction == s.ScaleUp {
+		scalingProposal.Cpu.Direction = s.ScaleNone
+		scalingProposal.Cpu.Amount = 0
+	}
+
+	if scalingProposal.Cpu.Direction == s.ScaleNone && scalingProposal.Mem.Direction == s.ScaleNone {
+		return nil
+	}
+
+	targetCpu := cluster.ClusterCpu + scalingProposal.Cpu.Amount
+	targetMem := cluster.ClusterRam + scalingProposal.Mem.Amount
+
+	// Validate and scale cluster
+	targetClusterProperties := *icDbaas.NewPatchClusterProperties()
+	targetClusterProperties.Cores = &targetCpu
+	targetClusterProperties.Ram = &targetMem
+	targetCluster := *icDbaas.NewPatchClusterRequest()
+	targetCluster.Properties = &targetClusterProperties
+
+	validCluster := validateCluster(targetCluster, *i.Contract)
+	if !validCluster {
+		errorsTotalCounter.Inc()
+		return fmt.Errorf("cluster is not valid")
+	}
+
+	slog.Info(fmt.Sprintf("Target for cluster %s: %d cores, %d bytes\n", cluster.ClusterName, *targetCluster.Properties.Cores, *targetCluster.Properties.Ram))
+	//_, _, err := i.DbaasApi.ClustersApi.ClustersPatch(context.TODO(), cluster.ClusterId).PatchClusterRequest(targetCluster).Execute()
+	//if err != nil {
+	//	errorsTotalCounter.Inc()
+	//	return fmt.Errorf("error while setting cluster resources: %s", err)
+	//}
+	return nil
+}
+
+func validateCluster(cluster icDbaas.PatchClusterRequest, contract ic.Contract) bool {
+	// TODO: Validate patch request against contract limits
+	//if *cluster.Properties.Cores > *contract.Properties.ResourceLimits.CoresPerCluster || *cluster.Properties.Ram > *contract.Properties.ResourceLimits.RamPerCluster {
+	//	return false
+	//}
+
+	return true
+}
+
 func validateServer(server ic.Server, contract ic.Contract) error {
 	coresOk := *server.Properties.Cores <= *contract.Properties.ResourceLimits.CoresPerServer
 	ramOk := *server.Properties.Ram <= *contract.Properties.ResourceLimits.RamPerServer
@@ -172,11 +311,22 @@ func (i Ionos) Validate() error {
 		return fmt.Errorf("password is empty")
 	}
 
-	if i.Config.ServerSource == nil {
-		return fmt.Errorf("server_source is nil")
+	if i.Config.ServerSource == nil && i.Config.ClusterSource == nil {
+		return fmt.Errorf("no scaled object source provided")
+	} else if i.Config.ServerSource != nil && i.Config.ClusterSource != nil {
+		return fmt.Errorf("both server and cluster source provided, only one must be set")
 	} else {
-		if err := i.Config.ServerSource.Validate(); err != nil {
-			return err
+		if i.Config.ServerSource != nil {
+			err := i.Config.ServerSource.Validate()
+			if err != nil {
+				return err
+			}
+		}
+		if i.Config.ClusterSource != nil {
+			err := i.Config.ClusterSource.Validate()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -197,4 +347,28 @@ func validateAndLoadContract(i *Ionos) error {
 		}
 	}
 	return fmt.Errorf("contract_id %d not found", i.Config.ContractId)
+}
+
+func (i Ionos) GetScaledObjects() ([]s.ScaledObject, error) {
+	var scaledObjects []s.ScaledObject
+	if i.Config.ServerSource != nil {
+		servers, err := i.getServers(1)
+		if err != nil {
+			return nil, fmt.Errorf("error while getting servers: %s", err)
+		}
+		for _, server := range servers {
+			scaledObjects = append(scaledObjects, server)
+		}
+	}
+	if i.Config.ClusterSource != nil {
+		clusters, err := i.getClusters()
+		slog.Info(fmt.Sprintf("Clusters: %+v\n", clusters))
+		if err != nil {
+			return nil, fmt.Errorf("error while getting clusters: %s", err)
+		}
+		for _, cluster := range clusters {
+			scaledObjects = append(scaledObjects, cluster)
+		}
+	}
+	return scaledObjects, nil
 }
