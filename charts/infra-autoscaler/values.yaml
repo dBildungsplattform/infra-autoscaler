@@ -1,0 +1,118 @@
+# Default values for infra-autoscaler.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  repository: ghcr.io/dbildungsplattform/infra-autoscaler
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "DBP-404@sha256:9ba25a8d15b2d58c7b598eab77d098a8e5804827b28db04d61fd12335ce0ae88"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+automountServiceAccountToken: false
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 10000
+
+podMonitor:
+  create: true
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+autoscalerConfig:
+  app_name: bbb-scaler
+  stage: prod
+  scaling_mode: heuristic
+  service_type: BBB
+  provider_type: Ionos
+  metrics_source_type: Prometheus
+  ionos_config:
+    username: $IONOS_USERNAME
+    password: $IONOS_PASSWORD
+    contract_id: $IONOS_CONTRACT_ID
+    server_source:
+      dynamic:
+        datacenter_ids: []
+        server_name_regex: "bbb-.*"
+  bbb_config:
+    resources:
+      cpu:
+        min_cores: 2
+        min_usage: 0.3
+        max_cores: 6
+        max_usage: 0.7
+      memory:
+        min_bytes: 12288
+        min_usage: 0.3
+        max_bytes: 32768
+        max_usage: 0.7
+    cycle_time_seconds: 60
+    api_token: $BBB_API_TOKEN
+  prometheus_config:
+    url: https://grafana.example.com/api/datasources/proxy/uid/<uid>/
+    token: $GRAFANA_TOKEN
+  metrics_exporter_port: 9100
+
+env: []
+  # - name: IONOS_CONTRACT_ID
+  #   value: 
+  # - name: IONOS_USERNAME
+  #   value: 
+  # - name: IONOS_PASSWORD
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: 
+  #       key: 
+  # - name: GRAFANA_TOKEN
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: 
+  #       key: 
+  # - name: BBB_API_TOKEN
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: 
+  #       key: 
+
+envFrom: []
+  # - secretRef:
+  #     name: infra-autoscaler

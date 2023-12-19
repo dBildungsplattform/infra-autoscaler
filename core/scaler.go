@@ -7,6 +7,8 @@ import (
 	"scaler/services"
 	s "scaler/shared"
 	"time"
+
+	"golang.org/x/exp/slog"
 )
 
 type ScalerApp struct {
@@ -126,14 +128,15 @@ func (sc ScalerApp) scaleServer(server s.Server) error {
 	if err != nil {
 		return fmt.Errorf("error while getting cpu usage for server %s: %s", server.ServerName, err)
 	}
+	slog.Info(fmt.Sprintf("CPU usage for %s: %f\n", server.ServerName, server.ServerCpuUsage))
 	server.ServerRamUsage, err = sc.metricsSource.GetServerMemoryUsage(server.ServerName)
 	if err != nil {
 		return fmt.Errorf("error while getting memory usage for server %s: %s", server.ServerName, err)
 	}
+	slog.Info(fmt.Sprintf("Memory usage for %s: %f\n", server.ServerName, server.ServerRamUsage))
 
 	// Get scaling proposal from service
 	scalingProposal, err := sc.service.ShouldScale(server)
-	fmt.Printf("Scaling proposal for %+v: %+v\n", server.ServerName, scalingProposal)
 	if err != nil {
 		return fmt.Errorf("error while getting scaling proposal for server %s: %s", server.ServerName, err)
 	}
@@ -158,6 +161,7 @@ func (sc ScalerApp) scaleServer(server s.Server) error {
 			scalingProposal.Mem.Amount = memDecrease
 		}
 	}
+	slog.Info(fmt.Sprintf("Scaling proposal for %+v: %+v\n", server.ServerName, scalingProposal))
 
 	err = sc.provider.SetScaledObject(server, scalingProposal)
 	if err != nil {
@@ -227,7 +231,7 @@ func (sc *ScalerApp) Scale() {
 		scaledObjects, err := sc.provider.GetScaledObjects()
 		fmt.Printf("Scaled objects: %+v\n", scaledObjects)
 		if err != nil {
-			fmt.Println("Error while getting servers: ", err)
+			slog.Error(fmt.Sprint("Error while getting servers: ", err))
 		}
 
 		//go sc.calculateMetrics(servers)
@@ -238,13 +242,13 @@ func (sc *ScalerApp) Scale() {
 				server := scaledObject.(s.Server)
 				err := sc.scaleServer(server)
 				if err != nil {
-					fmt.Println(err)
+					slog.Error(err.Error())
 				}
 			case s.ClusterType:
 				cluster := scaledObject.(s.Cluster)
 				err := sc.scaleCluster(cluster)
 				if err != nil {
-					fmt.Println(err)
+					slog.Error(err.Error())
 				}
 			}
 		}
