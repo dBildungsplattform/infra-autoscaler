@@ -127,9 +127,9 @@ func (bbb BBBService) GetCycleTimeSeconds() int {
 
 func (bbb BBBService) ShouldScale(object s.ScaledObject) (s.ScaleResource, error) {
 	var server *s.Server
-	switch object.(type) {
+	switch objectType := object.(type) {
 	case *s.Server:
-		server = object.(*s.Server)
+		server = objectType
 	default:
 		return s.ScaleResource{}, fmt.Errorf("unsupported scaled object type: %s", object.GetType())
 	}

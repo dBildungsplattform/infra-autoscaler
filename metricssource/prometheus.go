@@ -96,9 +96,9 @@ func (p *Prometheus) Query(query string) (float32, error) {
 
 func (p Prometheus) GetCpuUsage(object s.ScaledObject) (float32, error) {
 	var query string
-	switch object.GetType() {
-	case s.ServerType:
-		server := object.(*s.Server)
+	switch objectType := object.(type) {
+	case *s.Server:
+		server := objectType
 		serverLabels := fmt.Sprintf("instance=~\"%s\"", server.ServerName)
 		query = fmt.Sprintf("avg without (mode,cpu) (1 - rate(node_cpu_seconds_total{mode=\"idle\",%s}[30s]))", serverLabels)
 	default:
@@ -109,9 +109,9 @@ func (p Prometheus) GetCpuUsage(object s.ScaledObject) (float32, error) {
 
 func (p Prometheus) GetMemoryUsage(object s.ScaledObject) (float32, error) {
 	var query string
-	switch object.GetType() {
-	case s.ServerType:
-		server := object.(*s.Server)
+	switch objectType := object.(type) {
+	case *s.Server:
+		server := objectType
 		serverLabels := fmt.Sprintf("instance=~\"%s\"", server.ServerName)
 		query = fmt.Sprintf("1 - (node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes) / node_memory_MemTotal_bytes{%s}", serverLabels)
 	default:

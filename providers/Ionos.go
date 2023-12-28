@@ -248,9 +248,9 @@ func (i Ionos) GetScaledObjects() ([]s.ScaledObject, error) {
 }
 
 func (i Ionos) UpdateScaledObject(object s.ScaledObject, scalingProposal s.ScaleResource) error {
-	switch object.GetType() {
-	case s.ServerType:
-		server := object.(*s.Server)
+	switch objectType := object.(type) {
+	case *s.Server:
+		server := objectType
 		err := i.updateServer(*server, scalingProposal)
 		if err != nil {
 			return fmt.Errorf("error while updating server %s: %s", server.ServerName, err)
