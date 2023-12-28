@@ -7,10 +7,9 @@ import (
 )
 
 type Cluster struct {
-	ClusterId          string    `yaml:"cluster_id"`
-	ClusterName        string    `yaml:"cluster_name"`
-	ClusterCpu         int32     `yaml:"cluster_cpu"`
-	ClusterRam         int32     `yaml:"cluster_ram"`
+	ClusterId          string `yaml:"cluster_id"`
+	ClusterName        string `yaml:"cluster_name"`
+	ResourceState      ResourceState
 	ClusterStorageSize int32     `yaml:"cluster_storage_size"`
 	ClusterStorageType string    `yaml:"cluster_storage_type"`
 	LastUpdated        time.Time `yaml:"last_updated"`
@@ -19,6 +18,18 @@ type Cluster struct {
 
 func (c Cluster) GetType() ScaledObjectType {
 	return ClusterType
+}
+
+func (c Cluster) GetName() string {
+	return c.ClusterName
+}
+
+func (c Cluster) GetResourceState() ResourceState {
+	return c.ResourceState
+}
+
+func (c *Cluster) SetResourceState(resourceState ResourceState) {
+	c.ResourceState = resourceState
 }
 
 type ClusterSource struct {

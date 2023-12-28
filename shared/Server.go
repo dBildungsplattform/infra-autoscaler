@@ -11,16 +11,25 @@ type Server struct {
 	ServerId        string
 	ServerName      string
 	CpuArchitecture string
-	ServerCpu       int32
-	ServerRam       int32
-	ServerCpuUsage  float32
-	ServerRamUsage  float32
+	ResourceState   ResourceState
 	LastUpdated     time.Time
 	Ready           bool
 }
 
 func (s Server) GetType() ScaledObjectType {
 	return ServerType
+}
+
+func (s Server) GetName() string {
+	return s.ServerName
+}
+
+func (s Server) GetResourceState() ResourceState {
+	return s.ResourceState
+}
+
+func (s *Server) SetResourceState(resourceState ResourceState) {
+	s.ResourceState = resourceState
 }
 
 type ServerSource struct {

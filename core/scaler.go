@@ -122,23 +122,25 @@ func initMetricsSource(t *s.MetricsSourceType, configFile []byte) (*s.MetricsSou
 	return nil, fmt.Errorf("unknown metrics type: %s", *t)
 }
 
-func (sc ScalerApp) scaleServer(server s.Server) error {
+func (sc ScalerApp) scaleObject(object s.ScaledObject) error {
 	var err error
-	server.ServerCpuUsage, err = sc.metricsSource.GetServerCpuUsage(server.ServerName)
+	resourceState := object.GetResourceState()
+	resourceState.Cpu.CurrentUsage, err = sc.metricsSource.GetCpuUsage(object)
 	if err != nil {
-		return fmt.Errorf("error while getting cpu usage for server %s: %s", server.ServerName, err)
+		return fmt.Errorf("error while getting cpu usage for %s %s: %s", object.GetType(), object.GetName(), err)
 	}
-	slog.Info(fmt.Sprintf("CPU usage for %s: %f\n", server.ServerName, server.ServerCpuUsage))
-	server.ServerRamUsage, err = sc.metricsSource.GetServerMemoryUsage(server.ServerName)
+	slog.Info(fmt.Sprintf("CPU usage for %s %s: %f\n", object.GetType(), object.GetName(), resourceState.Cpu.CurrentUsage))
+	resourceState.Memory.CurrentUsage, err = sc.metricsSource.GetMemoryUsage(object)
 	if err != nil {
-		return fmt.Errorf("error while getting memory usage for server %s: %s", server.ServerName, err)
+		return fmt.Errorf("error while getting memory usage for %s %s: %s", object.GetType(), object.GetName(), err)
 	}
-	slog.Info(fmt.Sprintf("Memory usage for %s: %f\n", server.ServerName, server.ServerRamUsage))
+	slog.Info(fmt.Sprintf("Memory usage for %s %s: %f\n", object.GetType(), object.GetName(), resourceState.Memory.CurrentUsage))
+	object.SetResourceState(resourceState)
 
 	// Get scaling proposal from service
-	scalingProposal, err := sc.service.ShouldScale(server)
+	scalingProposal, err := sc.service.ShouldScale(object)
 	if err != nil {
-		return fmt.Errorf("error while getting scaling proposal for server %s: %s", server.ServerName, err)
+		return fmt.Errorf("error while getting scaling proposal for %s %s: %s", object.GetType(), object.GetName(), err)
 	}
 
 	// Scale
@@ -161,11 +163,11 @@ func (sc ScalerApp) scaleServer(server s.Server) error {
 			scalingProposal.Mem.Amount = memDecrease
 		}
 	}
-	slog.Info(fmt.Sprintf("Scaling proposal for %+v: %+v\n", server.ServerName, scalingProposal))
+	slog.Info(fmt.Sprintf("Scaling proposal for %+v: %+v\n", object.GetName(), scalingProposal))
 
-	err = sc.provider.SetServerResources(server, scalingProposal)
+	err = sc.provider.UpdateScaledObject(object, scalingProposal)
 	if err != nil {
-		return fmt.Errorf("error while setting resources for server %s: %s", server.ServerName, err)
+		return fmt.Errorf("error while setting resources for %s %s: %s", object.GetType(), object.GetName(), err)
 	}
 	if scalingProposal.Cpu.Direction != s.ScaleNone || scalingProposal.Mem.Direction != s.ScaleNone {
 		lastScaleTimeGauge.SetToCurrentTime()
@@ -178,22 +180,14 @@ func (sc *ScalerApp) Scale() {
 		cyclesCounter.Inc()
 
 		scaledObjects, err := sc.provider.GetScaledObjects()
-		//servers, err := sc.provider.GetServers(1)
 		if err != nil {
 			slog.Error(fmt.Sprint("Error while getting servers: ", err))
 		}
 
-		//go sc.calculateMetrics(servers)
+		go sc.calculateMetrics(scaledObjects)
 
 		for _, scaledObject := range scaledObjects {
-			var err error
-			switch scaledObject.GetType() {
-			case s.ServerType:
-				server := scaledObject.(s.Server)
-				err = sc.scaleServer(server)
-			default:
-				slog.Error(fmt.Sprintf("Unknown scaled object type: %s", scaledObject.GetType()))
-			}
+			err := sc.scaleObject(scaledObject)
 			if err != nil {
 				slog.Error(err.Error())
 			}

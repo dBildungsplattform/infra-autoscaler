@@ -65,17 +65,6 @@ func (p *Prometheus) Init() error {
 	return nil
 }
 
-func (p *Prometheus) QueryServerCPUUsage(serverLabels string) string {
-	// TODO: Move the queries to config ?
-	cpuUsageQuery := fmt.Sprintf("avg without (mode,cpu) (1 - rate(node_cpu_seconds_total{mode=\"idle\",%s}[30s]))", serverLabels)
-	return cpuUsageQuery
-}
-
-func (p *Prometheus) QueryServerMemoryUsage(serverLabels string) string {
-	memoryUsageQuery := fmt.Sprintf("1 - (node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes) / node_memory_MemTotal_bytes{%s}", serverLabels)
-	return memoryUsageQuery
-}
-
 func (p *Prometheus) Query(query string) (float32, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*timeout)
 	defer cancel()
@@ -105,14 +94,28 @@ func (p *Prometheus) Query(query string) (float32, error) {
 	}
 }
 
-func (p Prometheus) GetServerCpuUsage(serverName string) (float32, error) {
-	serverLabels := fmt.Sprintf("instance=~\"%s\"", serverName)
-	query := p.QueryServerCPUUsage(serverLabels)
+func (p Prometheus) GetCpuUsage(object s.ScaledObject) (float32, error) {
+	var query string
+	switch object.GetType() {
+	case s.ServerType:
+		server := object.(*s.Server)
+		serverLabels := fmt.Sprintf("instance=~\"%s\"", server.ServerName)
+		query = fmt.Sprintf("avg without (mode,cpu) (1 - rate(node_cpu_seconds_total{mode=\"idle\",%s}[30s]))", serverLabels)
+	default:
+		return 0, fmt.Errorf("unsupported scaled object type: %s", object.GetType())
+	}
 	return p.Query(query)
 }
 
-func (p Prometheus) GetServerMemoryUsage(serverName string) (float32, error) {
-	serverLabels := fmt.Sprintf("instance=~\"%s\"", serverName)
-	query := p.QueryServerMemoryUsage(serverLabels)
+func (p Prometheus) GetMemoryUsage(object s.ScaledObject) (float32, error) {
+	var query string
+	switch object.GetType() {
+	case s.ServerType:
+		server := object.(*s.Server)
+		serverLabels := fmt.Sprintf("instance=~\"%s\"", server.ServerName)
+		query = fmt.Sprintf("1 - (node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes) / node_memory_MemTotal_bytes{%s}", serverLabels)
+	default:
+		return 0, fmt.Errorf("unsupported scaled object type: %s", object.GetType())
+	}
 	return p.Query(query)
 }
