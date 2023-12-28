@@ -163,7 +163,7 @@ func (sc ScalerApp) scaleObject(object s.ScaledObject) error {
 			scalingProposal.Mem.Amount = memDecrease
 		}
 	}
-	slog.Info(fmt.Sprintf("Scaling proposal for %+v: %+v\n", object.GetName(), scalingProposal))
+	slog.Info(fmt.Sprintf("Scaling proposal for %s: %+v\n", object.GetName(), scalingProposal))
 
 	err = sc.provider.UpdateScaledObject(object, scalingProposal)
 	if err != nil {
@@ -191,7 +191,7 @@ func (sc *ScalerApp) Scale() {
 			if err != nil {
 				slog.Error(err.Error())
 			}
-			time.Sleep(time.Duration(sc.service.GetCycleTimeSeconds()) * time.Second)
 		}
+		time.Sleep(time.Duration(sc.service.GetCycleTimeSeconds()) * time.Second)
 	}
 }
