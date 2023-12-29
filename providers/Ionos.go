@@ -42,8 +42,8 @@ func (i *Ionos) Init() error {
 	return nil
 }
 
-func (i Ionos) getServers(depth int) ([]s.Server, error) {
-	var servers []s.Server
+func (i Ionos) getServers(depth int) ([]*s.Server, error) {
+	var servers []*s.Server
 	var err error
 
 	if i.Config.ServerSource.Static != nil {
@@ -58,7 +58,7 @@ func (i Ionos) getServers(depth int) ([]s.Server, error) {
 	return servers, nil
 }
 
-func getServersStatic(servers *[]s.Server, i Ionos) error {
+func getServersStatic(servers *[]*s.Server, i Ionos) error {
 	for _, serverSource := range *i.Config.ServerSource.Static {
 		dcServer, _, err := i.Api.ServersApi.DatacentersServersFindById(
 			context.TODO(),
@@ -73,7 +73,7 @@ func getServersStatic(servers *[]s.Server, i Ionos) error {
 	return nil
 }
 
-func getServersDynamic(servers *[]s.Server, i Ionos, depth int) error {
+func getServersDynamic(servers *[]*s.Server, i Ionos, depth int) error {
 	for _, datacenterId := range i.Config.ServerSource.Dynamic.DatacenterIds {
 		slog.Info(fmt.Sprint("Getting servers from datacenter: ", datacenterId))
 		dcServers, _, err := i.Api.ServersApi.DatacentersServersGet(context.TODO(), datacenterId).Depth(int32(depth)).XContractNumber(int32(i.Config.ContractId)).Execute()
@@ -93,8 +93,8 @@ func getServersDynamic(servers *[]s.Server, i Ionos, depth int) error {
 	return nil
 }
 
-func addServer(servers *[]s.Server, dcServer ic.Server, datacenterId string) {
-	*servers = append(*servers, s.Server{
+func addServer(servers *[]*s.Server, dcServer ic.Server, datacenterId string) {
+	*servers = append(*servers, &s.Server{
 		DatacenterId:    datacenterId,
 		ServerId:        *dcServer.Id,
 		ServerName:      *dcServer.Properties.Name,
@@ -152,8 +152,8 @@ func (i Ionos) updateServer(server s.Server, scalingProposal s.ScaleResource) er
 	return nil
 }
 
-func (i Ionos) getClusters() ([]s.Cluster, error) {
-	var clusters []s.Cluster
+func (i Ionos) getClusters() ([]*s.Cluster, error) {
+	var clusters []*s.Cluster
 	var err error
 
 	return clusters, err
@@ -232,7 +232,7 @@ func (i Ionos) GetScaledObjects() ([]s.ScaledObject, error) {
 			return nil, fmt.Errorf("error while getting servers: %s", err)
 		}
 		for _, server := range servers {
-			objects = append(objects, &server)
+			objects = append(objects, server)
 		}
 	}
 	if i.Config.ClusterSource != nil {
@@ -241,7 +241,7 @@ func (i Ionos) GetScaledObjects() ([]s.ScaledObject, error) {
 			return nil, fmt.Errorf("error while getting clusters: %s", err)
 		}
 		for _, cluster := range clusters {
-			objects = append(objects, &cluster)
+			objects = append(objects, cluster)
 		}
 	}
 	return objects, nil
