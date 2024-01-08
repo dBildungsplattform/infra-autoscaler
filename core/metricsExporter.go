@@ -11,16 +11,22 @@ import (
 
 var (
 	cyclesCounter           prometheus.Counter
+	cycleTimeGauge          prometheus.Gauge
 	capacityTotalGauge      *prometheus.GaugeVec
 	capacityUsedGauge       *prometheus.GaugeVec
+	instancesGauge          *prometheus.GaugeVec
 	maxScaledInstancesGauge *prometheus.GaugeVec
 	lastScaleTimeGauge      prometheus.Gauge
 )
 
 func initMetricsExporter() error {
 	cyclesCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "autoscaler_cycles_total",
+		Name: "autoscaler_cycle_count",
 		Help: "The total number of cycles the autoscaler has run",
+	})
+	cycleTimeGauge = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "autoscaler_cycle_time_seconds",
+		Help: "Autoscaler cycle time in seconds",
 	})
 	capacityTotalGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "autoscaler_capacity_total",
@@ -30,6 +36,10 @@ func initMetricsExporter() error {
 		Name: "autoscaler_capacity_used",
 		Help: "The amount of resource that is currently used",
 	}, []string{"resource_type"})
+	instancesGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "autoscaler_instances_count",
+		Help: "The amount of instances currently loaded by the autoscaler",
+	}, []string{"ready"})
 	maxScaledInstancesGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "autoscaler_max_scaled_instances",
 		Help: "The amount of instances that are scaled to the maximum for a given resource type",
@@ -38,7 +48,7 @@ func initMetricsExporter() error {
 		Name: "autoscaler_last_scale_time",
 		Help: "The time of the last scale operation",
 	})
-	metrics := []prometheus.Collector{cyclesCounter, capacityTotalGauge, capacityUsedGauge, maxScaledInstancesGauge, lastScaleTimeGauge}
+	metrics := []prometheus.Collector{cyclesCounter, cycleTimeGauge, capacityTotalGauge, capacityUsedGauge, instancesGauge, maxScaledInstancesGauge, lastScaleTimeGauge}
 	for _, metric := range metrics {
 		if err := prometheus.Register(metric); err != nil {
 			return err
@@ -53,6 +63,8 @@ func (sc ScalerApp) calculateMetrics(servers []s.Server) {
 
 	cpuUsedCapacity := 0
 	memoryUsedCapacity := 0
+	readyInstances := 0
+	notReadyInstances := 0
 	cpuMaxScaledInstances := 0
 	memoryMaxScaledInstances := 0
 
@@ -63,6 +75,12 @@ func (sc ScalerApp) calculateMetrics(servers []s.Server) {
 		cpuUsedCapacity += int(server.ServerCpu)
 		memoryUsedCapacity += int(server.ServerRam)
 
+		if server.Ready {
+			readyInstances++
+		} else {
+			notReadyInstances++
+		}
+
 		if int(server.ServerCpu) == resources.Cpu.MaxCores {
 			cpuMaxScaledInstances++
 		}
@@ -70,6 +88,9 @@ func (sc ScalerApp) calculateMetrics(servers []s.Server) {
 			memoryMaxScaledInstances++
 		}
 	}
+	instancesGauge.WithLabelValues("true").Set(float64(readyInstances))
+	instancesGauge.WithLabelValues("false").Set(float64(notReadyInstances))
+
 	if resources.Cpu != nil {
 		totalCpuCapacity := len(servers) * resources.Cpu.MaxCores
 		capacityTotalGauge.WithLabelValues("cpu").Set(float64(totalCpuCapacity))

@@ -8,11 +8,12 @@ var (
 
 func initMetricsExporter(serviceName string) error {
 	constLabels := map[string]string{
-		"provider": serviceName,
+		"component_type": serviceName,
+		"component":      "provider",
 	}
 	errorsTotalCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Name:        "autoscaler_provider_errors_total",
-		Help:        "The total number of errors when communicating with the infrastructure provider API",
+		Name:        "autoscaler_component_errors_total",
+		Help:        "The total number of errors encountered by a component of the autoscaler",
 		ConstLabels: constLabels,
 	})
 	metrics := []prometheus.Collector{errorsTotalCounter}

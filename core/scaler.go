@@ -54,6 +54,7 @@ func InitApp(configPath string) (*ScalerApp, error) {
 	}
 
 	initMetricsExporter()
+	cycleTimeGauge.Set(float64((*service).GetCycleTimeSeconds()))
 
 	return &ScalerApp{
 		appDefinition: app,
