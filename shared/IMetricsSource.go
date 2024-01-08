@@ -5,8 +5,8 @@ import "fmt"
 /*** Metrics definition ***/
 type MetricsSource interface {
 	Validate() error
-	GetServerCpuUsage(string) (float32, error)
-	GetServerMemoryUsage(string) (float32, error)
+	GetCpuUsage(ScaledObject) (float32, error)
+	GetMemoryUsage(ScaledObject) (float32, error)
 }
 
 type MetricsSourceType string

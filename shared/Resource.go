@@ -22,6 +22,21 @@ type MemoryResources struct {
 	MaxUsage float32 `yaml:"max_usage"`
 }
 
+type ResourceState struct {
+	Cpu    *CpuResourceState
+	Memory *MemoryResourceState
+}
+
+type CpuResourceState struct {
+	CurrentCores int32
+	CurrentUsage float32
+}
+
+type MemoryResourceState struct {
+	CurrentBytes int32
+	CurrentUsage float32
+}
+
 type ScaleResource struct {
 	Cpu ScaleOp
 	Mem ScaleOp
