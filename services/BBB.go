@@ -125,29 +125,29 @@ func (bbb BBBService) GetCycleTimeSeconds() int {
 	return bbb.Config.CycleTimeSeconds
 }
 
-func (bbb BBBService) ShouldScale(object s.ScaledObject) (s.ScaleResource, error) {
+func (bbb BBBService) ComputeScalingProposal(object s.ScaledObject) (s.ResourceScalingProposal, error) {
 	var server *s.Server
 	switch objectType := object.(type) {
 	case *s.Server:
 		server = objectType
 	default:
-		return s.ScaleResource{}, fmt.Errorf("unsupported scaled object type: %s", object.GetType())
+		return s.ResourceScalingProposal{}, fmt.Errorf("unsupported scaled object type: %s", object.GetType())
 	}
 
 	if !server.Ready {
-		return s.ScaleResource{}, fmt.Errorf("server %s is not ready", server.ServerName)
+		return s.ResourceScalingProposal{}, fmt.Errorf("server %s is not ready", server.ServerName)
 	}
 
 	participantsCount, err := bbb.GetParticipantsCount(server.ServerName)
 	if err != nil {
-		return s.ScaleResource{}, fmt.Errorf("error while getting participants count: %s", err)
+		return s.ResourceScalingProposal{}, fmt.Errorf("error while getting participants count: %s", err)
 	}
 
 	return applyRules(*server, participantsCount, bbb), nil
 }
 
-func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ScaleResource {
-	targetResource := s.ScaleResource{
+func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ResourceScalingProposal {
+	targetResource := s.ResourceScalingProposal{
 		Cpu: s.ScaleOp{
 			Direction: s.ScaleNone,
 			Reason:    "Default",

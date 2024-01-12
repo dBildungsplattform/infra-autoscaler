@@ -6,7 +6,7 @@ type Service interface {
 	Init() error
 	GetResources() Resources
 	GetCycleTimeSeconds() int
-	ShouldScale(ScaledObject) (ScaleResource, error)
+	ComputeScalingProposal(ScaledObject) (ResourceScalingProposal, error)
 }
 
 type ServiceState interface {

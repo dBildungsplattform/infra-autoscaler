@@ -43,8 +43,8 @@ func (postgres PostgresService) GetCycleTimeSeconds() int {
 	return postgres.Config.CycleTimeSeconds
 }
 
-func (postgres PostgresService) ShouldScale(s.ScaledObject) (s.ScaleResource, error) {
-	return s.ScaleResource{}, nil // TODO: implement
+func (postgres PostgresService) ComputeScalingProposal(s.ScaledObject) (s.ResourceScalingProposal, error) {
+	return s.ResourceScalingProposal{}, nil // TODO: implement
 }
 
 func (service PostgresService) Validate() error {

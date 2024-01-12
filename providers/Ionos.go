@@ -114,7 +114,7 @@ func addServer(servers *[]*s.Server, dcServer ic.Server, datacenterId string) {
 	})
 }
 
-func (i Ionos) updateServer(server s.Server, scalingProposal s.ScaleResource) error {
+func (i Ionos) updateServer(server s.Server, scalingProposal s.ResourceScalingProposal) error {
 	// When scaling in different directions, scaling up overrides scaling down
 	if scalingProposal.Cpu.Direction == s.ScaleUp && scalingProposal.Mem.Direction == s.ScaleDown {
 		scalingProposal.Mem.Direction = s.ScaleNone
@@ -247,7 +247,7 @@ func (i Ionos) GetScaledObjects() ([]s.ScaledObject, error) {
 	return objects, nil
 }
 
-func (i Ionos) UpdateScaledObject(object s.ScaledObject, scalingProposal s.ScaleResource) error {
+func (i Ionos) UpdateScaledObject(object s.ScaledObject, scalingProposal s.ResourceScalingProposal) error {
 	switch objectType := object.(type) {
 	case *s.Server:
 		server := objectType

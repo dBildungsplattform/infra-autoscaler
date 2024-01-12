@@ -138,7 +138,7 @@ func (sc ScalerApp) scaleObject(object s.ScaledObject) error {
 	object.SetResourceState(resourceState)
 
 	// Get scaling proposal from service
-	scalingProposal, err := sc.service.ShouldScale(object)
+	scalingProposal, err := sc.service.ComputeScalingProposal(object)
 	if err != nil {
 		return fmt.Errorf("error while getting scaling proposal for %s %s: %s", object.GetType(), object.GetName(), err)
 	}

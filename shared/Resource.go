@@ -37,7 +37,7 @@ type MemoryResourceState struct {
 	CurrentUsage float32
 }
 
-type ScaleResource struct {
+type ResourceScalingProposal struct {
 	Cpu ScaleOp
 	Mem ScaleOp
 }
