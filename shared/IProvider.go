@@ -2,7 +2,7 @@ package shared
 
 import "fmt"
 
-/*** Provider definition ***/
+// Interface to get the scaled objects and update them
 type Provider interface {
 	Validate() error
 	GetScaledObjects() ([]ScaledObject, error)

@@ -65,6 +65,7 @@ func (p *Prometheus) Init() error {
 	return nil
 }
 
+// Runs a query against Prometheus and returns the result as a float32
 func (p *Prometheus) Query(query string) (float32, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*timeout)
 	defer cancel()
@@ -94,6 +95,7 @@ func (p *Prometheus) Query(query string) (float32, error) {
 	}
 }
 
+// Wrapper around Query() to get the CPU usage for a scaled object
 func (p Prometheus) GetCpuUsage(object s.ScaledObject) (float32, error) {
 	var query string
 	switch objectType := object.(type) {
@@ -109,6 +111,7 @@ func (p Prometheus) GetCpuUsage(object s.ScaledObject) (float32, error) {
 	return p.Query(query)
 }
 
+// Wrapper around Query() to get the memory usage for a scaled object
 func (p Prometheus) GetMemoryUsage(object s.ScaledObject) (float32, error) {
 	var query string
 	switch objectType := object.(type) {

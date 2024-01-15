@@ -181,7 +181,7 @@ func (sc *ScalerApp) Scale() {
 
 		scaledObjects, err := sc.provider.GetScaledObjects()
 		if err != nil {
-			slog.Error(fmt.Sprint("Error while getting servers: ", err))
+			slog.Error(fmt.Sprint("Error while getting scaled objects: ", err))
 		}
 
 		go sc.calculateMetrics(scaledObjects)

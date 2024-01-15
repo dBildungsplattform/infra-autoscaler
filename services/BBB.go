@@ -59,7 +59,7 @@ func (bbb *BBBService) GetConfig() BBBServiceConfig {
 	return bbb.Config
 }
 
-// See https://docs.bigbluebutton.org/development/api/#usage
+// Signs a BBB API request according to https://docs.bigbluebutton.org/development/api/#usage
 func signedBBBAPIRequest(serverUrl, endpoint, parameters, apiToken string) string {
 	queryString := endpoint + parameters + apiToken
 	checksumRaw := sha1.Sum([]byte(queryString))
@@ -81,6 +81,7 @@ func doBBBAPICall(serverUrl, endpoint, parameters, apiToken string) ([]byte, err
 	return body, nil
 }
 
+// Count the total number of participants in all meetings
 func countParticipants(meetingsResponse *BBBGetMeetingsResponseXML) int {
 	count := 0
 	for _, meeting := range meetingsResponse.Meetings.Meeting {
@@ -146,6 +147,7 @@ func (bbb BBBService) ComputeScalingProposal(object s.ScaledObject) (s.ResourceS
 	return applyRules(*server, participantsCount, bbb), nil
 }
 
+// Applies the BBB scaling rules to decide how to scale
 func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ResourceScalingProposal {
 	targetResource := s.ResourceScalingProposal{
 		Cpu: s.ScaleOp{

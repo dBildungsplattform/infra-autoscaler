@@ -2,7 +2,7 @@ package shared
 
 import "fmt"
 
-/*** Metrics definition ***/
+// Interface to get the metrics for a scaled object
 type MetricsSource interface {
 	Validate() error
 	GetCpuUsage(ScaledObject) (float32, error)

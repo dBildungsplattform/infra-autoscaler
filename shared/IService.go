@@ -1,6 +1,6 @@
 package shared
 
-/*** Service definition ***/
+// Interface that implements the scaling logic for a service and communicates with it if needed
 type Service interface {
 	Validate() error
 	Init() error

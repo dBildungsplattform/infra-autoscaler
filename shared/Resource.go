@@ -8,6 +8,7 @@ type Resources struct {
 	Memory *MemoryResources `yaml:"memory"`
 }
 
+// TODO: replace this with a generic resource interface
 type CpuResources struct {
 	MinCores int     `yaml:"min_cores"`
 	MaxCores int     `yaml:"max_cores"`
