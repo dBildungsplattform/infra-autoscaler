@@ -131,7 +131,7 @@ func TestSignedBBBAPIRequest(t *testing.T) {
 	}
 }
 
-func testApplyRulesCPU(t *testing.T, bbbParticipants int, resourceState s.CpuResourceState, resources s.CpuResources, expected s.ScaleDirection) {
+func testBBBApplyRulesCPU(t *testing.T, bbbParticipants int, resourceState s.CpuResourceState, resources s.CpuResources, expected s.ScaleDirection) {
 	bbbConfig := validBBBConfig
 	bbbConfig.Resources.Cpu = &resources
 	bbbState := &BBBServiceState{
@@ -145,14 +145,14 @@ func testApplyRulesCPU(t *testing.T, bbbParticipants int, resourceState s.CpuRes
 	server := sampleBBBServer
 	server.ResourceState.Cpu = &resourceState
 
-	proposal := applyRules(server, bbbParticipants, bbbService)
+	proposal := bbbService.applyRules(server, bbbParticipants)
 	if proposal.Cpu.Direction != expected {
 		t.Fatalf("Expected CPU scale direction to be %s but got %s", expected, proposal.Cpu.Direction)
 	}
 }
 
 // Check that a server with below minimum resources is scaled up even if there are no participants
-func TestApplyRulesRule1(t *testing.T) {
+func TestBBBApplyRulesRule1(t *testing.T) {
 	resources := s.CpuResources{
 		MinCores: 2,
 		MaxCores: 4,
@@ -162,11 +162,11 @@ func TestApplyRulesRule1(t *testing.T) {
 		CurrentCores: 1,
 		CurrentUsage: 0,
 	}
-	testApplyRulesCPU(t, 0, resourceState, resources, s.ScaleUp)
+	testBBBApplyRulesCPU(t, 0, resourceState, resources, s.ScaleUp)
 }
 
 // Check that a server with participants and above maximum usage is scaled up
-func TestApplyRulesRule2ScaleUp(t *testing.T) {
+func TestBBBApplyRulesRule2ScaleUp(t *testing.T) {
 	resources := s.CpuResources{
 		MinCores: 2,
 		MaxCores: 4,
@@ -176,11 +176,11 @@ func TestApplyRulesRule2ScaleUp(t *testing.T) {
 		CurrentCores: 2,
 		CurrentUsage: 0.6,
 	}
-	testApplyRulesCPU(t, 2, resourceState, resources, s.ScaleUp)
+	testBBBApplyRulesCPU(t, 2, resourceState, resources, s.ScaleUp)
 }
 
 // Check that a server with 0 participants and minimum resources is not modified
-func TestApplyRulesRule3NoChanges(t *testing.T) {
+func TestBBBApplyRulesRule3NoChanges(t *testing.T) {
 	resources := s.CpuResources{
 		MinCores: 2,
 		MaxCores: 4,
@@ -190,11 +190,11 @@ func TestApplyRulesRule3NoChanges(t *testing.T) {
 		CurrentCores: 2,
 		CurrentUsage: 0,
 	}
-	testApplyRulesCPU(t, 0, resourceState, resources, s.ScaleNone)
+	testBBBApplyRulesCPU(t, 0, resourceState, resources, s.ScaleNone)
 }
 
 // Check that a server with 0 participants and above minimum resources is scaled down
-func TestApplyRulesRule3ScaleDown(t *testing.T) {
+func TestBBBApplyRulesRule3ScaleDown(t *testing.T) {
 	resources := s.CpuResources{
 		MinCores: 2,
 		MaxCores: 4,
@@ -204,11 +204,11 @@ func TestApplyRulesRule3ScaleDown(t *testing.T) {
 		CurrentCores: 3,
 		CurrentUsage: 0,
 	}
-	testApplyRulesCPU(t, 0, resourceState, resources, s.ScaleDown)
+	testBBBApplyRulesCPU(t, 0, resourceState, resources, s.ScaleDown)
 }
 
 // Check that a server with participants and below maximum usage is not modified
-func TestApplyRulesRuleDefault(t *testing.T) {
+func TestBBBApplyRulesRuleDefault(t *testing.T) {
 	resources := s.CpuResources{
 		MinCores: 2,
 		MaxCores: 4,
@@ -218,5 +218,5 @@ func TestApplyRulesRuleDefault(t *testing.T) {
 		CurrentCores: 3,
 		CurrentUsage: 0.4,
 	}
-	testApplyRulesCPU(t, 2, resourceState, resources, s.ScaleNone)
+	testBBBApplyRulesCPU(t, 2, resourceState, resources, s.ScaleNone)
 }

@@ -144,11 +144,11 @@ func (bbb BBBService) ComputeScalingProposal(object s.ScaledObject) (s.ResourceS
 		return s.ResourceScalingProposal{}, fmt.Errorf("error while getting participants count: %s", err)
 	}
 
-	return applyRules(*server, participantsCount, bbb), nil
+	return bbb.applyRules(*server, participantsCount), nil
 }
 
 // Applies the BBB scaling rules to decide how to scale
-func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ResourceScalingProposal {
+func (bbb BBBService) applyRules(server s.Server, participantsCount int) s.ResourceScalingProposal {
 	targetResource := s.ResourceScalingProposal{
 		Cpu: s.ScaleOp{
 			Direction: s.ScaleNone,
