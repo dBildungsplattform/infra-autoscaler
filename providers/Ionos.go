@@ -166,7 +166,7 @@ func (i Ionos) getClusters() ([]*s.Cluster, error) {
 
 	if i.Config.ClusterSource.Static != nil {
 		err = getClustersStatic(&clusters, i)
-	} else if i.Config.ServerSource.Dynamic != nil {
+	} else if i.Config.ClusterSource.Dynamic != nil {
 		err = getClustersDynamic(&clusters, i)
 	}
 	if err != nil {
