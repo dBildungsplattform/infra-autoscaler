@@ -152,11 +152,11 @@ func (i Ionos) updateServer(server s.Server, scalingProposal s.ResourceScalingPr
 	}
 
 	slog.Info(fmt.Sprintf("Target for server %s: %d cores, %d bytes\n", server.ServerName, *targetServer.Properties.Cores, *targetServer.Properties.Ram))
-	// _, _, err = i.Api.ServersApi.DatacentersServersPut(context.TODO(), server.DatacenterId, server.ServerId).Server(targetServer).XContractNumber(int32(i.Config.ContractId)).Execute()
-	// if err != nil {
-	// 	errorsTotalCounter.Inc()
-	// 	return fmt.Errorf("error while setting server resources: %s", err)
-	// }
+	_, _, err = i.Api.ServersApi.DatacentersServersPut(context.TODO(), server.DatacenterId, server.ServerId).Server(targetServer).XContractNumber(int32(i.Config.ContractId)).Execute()
+	if err != nil {
+		errorsTotalCounter.Inc()
+		return fmt.Errorf("error while setting server resources: %s", err)
+	}
 	return nil
 }
 
@@ -246,11 +246,11 @@ func (i Ionos) updateCluster(cluster s.Cluster, scalingProposal s.ResourceScalin
 	}
 
 	slog.Info(fmt.Sprintf("Target for cluster %s: %d cores, %d bytes\n", cluster.ClusterName, *targetCluster.Properties.Cores, *targetCluster.Properties.Ram))
-	// _, _, err := i.DbaasApi.ClustersApi.ClustersPatch(context.TODO(), cluster.ClusterId).PatchClusterRequest(targetCluster).Execute()
-	// if err != nil {
-	// 	errorsTotalCounter.Inc()
-	// 	return fmt.Errorf("error while setting cluster resources: %s", err)
-	// }
+	_, _, err := i.DbaasApi.ClustersApi.ClustersPatch(context.TODO(), cluster.ClusterId).PatchClusterRequest(targetCluster).Execute()
+	if err != nil {
+		errorsTotalCounter.Inc()
+		return fmt.Errorf("error while setting cluster resources: %s", err)
+	}
 	return nil
 }
 
