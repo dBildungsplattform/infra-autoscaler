@@ -6,8 +6,8 @@ import (
 )
 
 type PostgresService struct {
-	state  PostgresServiceState
-	config PostgresServiceConfig
+	State  PostgresServiceState  `yaml:"-"`
+	Config PostgresServiceConfig `yaml:"postgres_config"`
 }
 
 type PostgresServiceState struct {
@@ -19,6 +19,8 @@ func (postgres PostgresServiceState) GetName() string {
 }
 
 type PostgresServiceConfig struct {
+	CycleTimeSeconds int         `yaml:"cycle_time_seconds"`
+	Resources        s.Resources `yaml:"resources"`
 }
 
 func (postgres PostgresService) Init() error {
@@ -26,42 +28,45 @@ func (postgres PostgresService) Init() error {
 }
 
 func (postgres *PostgresService) GetState() s.ServiceState {
-	return postgres.state
+	return postgres.State
 }
 
 func (postgres *PostgresService) GetConfig() PostgresServiceConfig {
-	return postgres.config
+	return postgres.Config
 }
 
 func (postgres PostgresService) GetResources() s.Resources {
-	return s.Resources{} // TODO: implement
+	return postgres.Config.Resources
 }
 
 func (postgres PostgresService) GetCycleTimeSeconds() int {
-	return 0 // TODO: implement
+	return postgres.Config.CycleTimeSeconds
 }
 
-func (postgres PostgresService) ShouldScale(s.Server) (s.ScaleResource, error) {
-	return s.ScaleResource{}, nil // TODO: implement
+func (postgres PostgresService) ComputeScalingProposal(s.ScaledObject) (s.ResourceScalingProposal, error) {
+	return s.ResourceScalingProposal{}, nil // TODO: implement
 }
 
 func (service PostgresService) Validate() error {
-	if err := service.config.Validate(); err != nil {
+	if err := service.Config.Validate(); err != nil {
 		return err
 	}
-	if err := service.state.Validate(); err != nil {
+	if err := service.State.Validate(); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (state PostgresServiceState) Validate() error {
-	if state.Name == "" {
-		return fmt.Errorf("name is empty")
-	}
 	return nil
 }
 
 func (config PostgresServiceConfig) Validate() error {
+	if config.CycleTimeSeconds <= 0 {
+		return fmt.Errorf("cycle time seconds must be greater than 0")
+	}
+	if err := config.Resources.Validate(); err != nil {
+		return err
+	}
 	return nil
 }

@@ -65,17 +65,7 @@ func (p *Prometheus) Init() error {
 	return nil
 }
 
-func (p *Prometheus) QueryServerCPUUsage(serverLabels string) string {
-	// TODO: Move the queries to config ?
-	cpuUsageQuery := fmt.Sprintf("avg without (mode,cpu) (1 - rate(node_cpu_seconds_total{mode=\"idle\",%s}[30s]))", serverLabels)
-	return cpuUsageQuery
-}
-
-func (p *Prometheus) QueryServerMemoryUsage(serverLabels string) string {
-	memoryUsageQuery := fmt.Sprintf("1 - (node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes) / node_memory_MemTotal_bytes{%s}", serverLabels)
-	return memoryUsageQuery
-}
-
+// Runs a query against Prometheus and returns the result as a float32
 func (p *Prometheus) Query(query string) (float32, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*timeout)
 	defer cancel()
@@ -105,14 +95,34 @@ func (p *Prometheus) Query(query string) (float32, error) {
 	}
 }
 
-func (p Prometheus) GetServerCpuUsage(serverName string) (float32, error) {
-	serverLabels := fmt.Sprintf("instance=~\"%s\"", serverName)
-	query := p.QueryServerCPUUsage(serverLabels)
+// Wrapper around Query() to get the CPU usage for a scaled object
+func (p Prometheus) GetCpuUsage(object s.ScaledObject) (float32, error) {
+	var query string
+	switch objectType := object.(type) {
+	case *s.Server:
+		server := objectType
+		query = fmt.Sprintf("avg without (mode,cpu) (1 - rate(node_cpu_seconds_total{mode=\"idle\",instance=~\"%s\"}[30s]))", server.ServerName)
+	case *s.Cluster:
+		cluster := objectType
+		query = fmt.Sprintf("ionos_dbaas_postgres_cpu_rate5m{postgres_cluster=\"%s\", role=\"master\"}", cluster.ClusterName)
+	default:
+		return 0, fmt.Errorf("unsupported scaled object type: %s", object.GetType())
+	}
 	return p.Query(query)
 }
 
-func (p Prometheus) GetServerMemoryUsage(serverName string) (float32, error) {
-	serverLabels := fmt.Sprintf("instance=~\"%s\"", serverName)
-	query := p.QueryServerMemoryUsage(serverLabels)
+// Wrapper around Query() to get the memory usage for a scaled object
+func (p Prometheus) GetMemoryUsage(object s.ScaledObject) (float32, error) {
+	var query string
+	switch objectType := object.(type) {
+	case *s.Server:
+		server := objectType
+		query = fmt.Sprintf("1 - (node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes) / node_memory_MemTotal_bytes{instance=~\"%s\"}", server.ServerName)
+	case *s.Cluster:
+		cluster := objectType
+		query = fmt.Sprintf("1 - ionos_dbaas_postgres_memory_available_bytes / ionos_dbaas_postgres_memory_total_bytes{postgres_cluster=\"%s\", role=\"master\"}", cluster.ClusterName)
+	default:
+		return 0, fmt.Errorf("unsupported scaled object type: %s", object.GetType())
+	}
 	return p.Query(query)
 }

@@ -59,7 +59,7 @@ func (bbb *BBBService) GetConfig() BBBServiceConfig {
 	return bbb.Config
 }
 
-// See https://docs.bigbluebutton.org/development/api/#usage
+// Signs a BBB API request according to https://docs.bigbluebutton.org/development/api/#usage
 func signedBBBAPIRequest(serverUrl, endpoint, parameters, apiToken string) string {
 	queryString := endpoint + parameters + apiToken
 	checksumRaw := sha1.Sum([]byte(queryString))
@@ -81,6 +81,7 @@ func doBBBAPICall(serverUrl, endpoint, parameters, apiToken string) ([]byte, err
 	return body, nil
 }
 
+// Count the total number of participants in all meetings
 func countParticipants(meetingsResponse *BBBGetMeetingsResponseXML) int {
 	count := 0
 	for _, meeting := range meetingsResponse.Meetings.Meeting {
@@ -125,21 +126,30 @@ func (bbb BBBService) GetCycleTimeSeconds() int {
 	return bbb.Config.CycleTimeSeconds
 }
 
-func (bbb BBBService) ShouldScale(server s.Server) (s.ScaleResource, error) {
+func (bbb BBBService) ComputeScalingProposal(object s.ScaledObject) (s.ResourceScalingProposal, error) {
+	var server *s.Server
+	switch objectType := object.(type) {
+	case *s.Server:
+		server = objectType
+	default:
+		return s.ResourceScalingProposal{}, fmt.Errorf("unsupported scaled object type: %s", object.GetType())
+	}
+
 	if !server.Ready {
-		return s.ScaleResource{}, fmt.Errorf("server %s is not ready", server.ServerName)
+		return s.ResourceScalingProposal{}, fmt.Errorf("server %s is not ready", server.ServerName)
 	}
 
 	participantsCount, err := bbb.GetParticipantsCount(server.ServerName)
 	if err != nil {
-		return s.ScaleResource{}, fmt.Errorf("error while getting participants count: %s", err)
+		return s.ResourceScalingProposal{}, fmt.Errorf("error while getting participants count: %s", err)
 	}
 
-	return applyRules(server, participantsCount, bbb), nil
+	return applyRules(*server, participantsCount, bbb), nil
 }
 
-func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ScaleResource {
-	targetResource := s.ScaleResource{
+// Applies the BBB scaling rules to decide how to scale
+func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ResourceScalingProposal {
+	targetResource := s.ResourceScalingProposal{
 		Cpu: s.ScaleOp{
 			Direction: s.ScaleNone,
 			Reason:    "Default",
@@ -159,48 +169,48 @@ func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ScaleR
 	// 3. Scale down to the configured minimum if there are no participants
 
 	// Rule 1 CPU
-	if server.ServerCpu < int32(bbb.Config.Resources.Cpu.MinCores) {
+	if server.ResourceState.Cpu.CurrentCores < int32(bbb.Config.Resources.Cpu.MinCores) {
 		targetResource.Cpu.Direction = s.ScaleUp
 		targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 1: resource below minimum"
-		targetResource.Cpu.Amount = int32(bbb.Config.Resources.Cpu.MinCores) - server.ServerCpu
+		targetResource.Cpu.Amount = int32(bbb.Config.Resources.Cpu.MinCores) - server.ResourceState.Cpu.CurrentCores
 	}
 
 	// Rule 2 CPU
-	if cpuMaxUsageDelta := server.ServerCpuUsage - bbb.Config.Resources.Cpu.MaxUsage; cpuMaxUsageDelta > 0 && server.ServerCpu < int32(bbb.Config.Resources.Cpu.MaxCores) {
+	if cpuMaxUsageDelta := server.ResourceState.Cpu.CurrentUsage - bbb.Config.Resources.Cpu.MaxUsage; cpuMaxUsageDelta > 0 && server.ResourceState.Cpu.CurrentCores < int32(bbb.Config.Resources.Cpu.MaxCores) {
 		targetResource.Cpu.Direction = s.ScaleUp
 		targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 2: usage above maximum"
-		cpuInc := cpuMaxUsageDelta * float32(server.ServerCpu) / server.ServerCpuUsage
-		targetHeuristic := server.ServerCpu + int32(math.Ceil(float64(cpuInc)))
-		targetResource.Cpu.Amount = int32(math.Min(float64(targetHeuristic), float64((bbb.Config.Resources.Cpu.MaxCores)))) - server.ServerCpu
+		cpuInc := cpuMaxUsageDelta * float32(server.ResourceState.Cpu.CurrentCores) / server.ResourceState.Cpu.CurrentUsage
+		targetHeuristic := server.ResourceState.Cpu.CurrentCores + int32(math.Ceil(float64(cpuInc)))
+		targetResource.Cpu.Amount = int32(math.Min(float64(targetHeuristic), float64((bbb.Config.Resources.Cpu.MaxCores)))) - server.ResourceState.Cpu.CurrentCores
 	}
 
 	// Rule 1 memory
-	if server.ServerRam < int32(bbb.Config.Resources.Memory.MinBytes) {
+	if server.ResourceState.Memory.CurrentBytes < int32(bbb.Config.Resources.Memory.MinBytes) {
 		targetResource.Mem.Direction = s.ScaleUp
 		targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 1: resource below minimum"
-		targetResource.Mem.Amount = int32(bbb.Config.Resources.Memory.MinBytes) - server.ServerRam
+		targetResource.Mem.Amount = int32(bbb.Config.Resources.Memory.MinBytes) - server.ResourceState.Memory.CurrentBytes
 	}
 
 	// Rule 2 memory
-	if memMaxUsageDelta := server.ServerRamUsage - bbb.Config.Resources.Memory.MaxUsage; memMaxUsageDelta > 0 && server.ServerRam < int32(bbb.Config.Resources.Memory.MaxBytes) {
+	if memMaxUsageDelta := server.ResourceState.Memory.CurrentUsage - bbb.Config.Resources.Memory.MaxUsage; memMaxUsageDelta > 0 && server.ResourceState.Memory.CurrentBytes < int32(bbb.Config.Resources.Memory.MaxBytes) {
 		targetResource.Mem.Direction = s.ScaleUp
 		targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 2: usage above maximum"
-		memInc := memMaxUsageDelta * float32(server.ServerRam) / server.ServerRamUsage
-		targetHeuristic := server.ServerRam + int32(math.Ceil(float64(memInc)))
-		targetResource.Mem.Amount = int32(math.Min(float64(targetHeuristic), float64((bbb.Config.Resources.Memory.MaxBytes)))) - server.ServerRam
+		memInc := memMaxUsageDelta * float32(server.ResourceState.Memory.CurrentBytes) / server.ResourceState.Memory.CurrentUsage
+		targetHeuristic := server.ResourceState.Memory.CurrentBytes + int32(math.Ceil(float64(memInc)))
+		targetResource.Mem.Amount = int32(math.Min(float64(targetHeuristic), float64((bbb.Config.Resources.Memory.MaxBytes)))) - server.ResourceState.Memory.CurrentBytes
 	}
 
 	// Rule 3 CPU and memory
 	if participantsCount == 0 {
-		if server.ServerRam > int32(bbb.Config.Resources.Memory.MinBytes) {
+		if server.ResourceState.Memory.CurrentBytes > int32(bbb.Config.Resources.Memory.MinBytes) {
 			targetResource.Mem.Direction = s.ScaleDown
 			targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 3: no participants"
-			targetResource.Mem.Amount = int32(bbb.Config.Resources.Memory.MinBytes) - server.ServerRam
+			targetResource.Mem.Amount = int32(bbb.Config.Resources.Memory.MinBytes) - server.ResourceState.Memory.CurrentBytes
 		}
-		if server.ServerCpu > int32(bbb.Config.Resources.Cpu.MinCores) {
+		if server.ResourceState.Cpu.CurrentCores > int32(bbb.Config.Resources.Cpu.MinCores) {
 			targetResource.Cpu.Direction = s.ScaleDown
 			targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 3: no participants"
-			targetResource.Cpu.Amount = int32(bbb.Config.Resources.Cpu.MinCores) - server.ServerCpu
+			targetResource.Cpu.Amount = int32(bbb.Config.Resources.Cpu.MinCores) - server.ResourceState.Cpu.CurrentCores
 		}
 	}
 

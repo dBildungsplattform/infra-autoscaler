@@ -8,6 +8,7 @@ type Resources struct {
 	Memory *MemoryResources `yaml:"memory"`
 }
 
+// TODO: replace this with a generic resource interface
 type CpuResources struct {
 	MinCores int     `yaml:"min_cores"`
 	MaxCores int     `yaml:"max_cores"`
@@ -22,7 +23,22 @@ type MemoryResources struct {
 	MaxUsage float32 `yaml:"max_usage"`
 }
 
-type ScaleResource struct {
+type ResourceState struct {
+	Cpu    *CpuResourceState
+	Memory *MemoryResourceState
+}
+
+type CpuResourceState struct {
+	CurrentCores int32
+	CurrentUsage float32
+}
+
+type MemoryResourceState struct {
+	CurrentBytes int32
+	CurrentUsage float32
+}
+
+type ResourceScalingProposal struct {
 	Cpu ScaleOp
 	Mem ScaleOp
 }
