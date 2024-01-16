@@ -121,7 +121,6 @@ func (p Prometheus) GetMemoryUsage(object s.ScaledObject) (float32, error) {
 	case *s.Cluster:
 		cluster := objectType
 		query = fmt.Sprintf("1 - ionos_dbaas_postgres_memory_available_bytes / ionos_dbaas_postgres_memory_total_bytes{postgres_cluster=\"%s\", role=\"master\"}", cluster.ClusterId)
-		slog.Info(query)
 	default:
 		return 0, fmt.Errorf("unsupported scaled object type: %s", object.GetType())
 	}
