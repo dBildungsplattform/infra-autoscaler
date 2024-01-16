@@ -1,6 +1,6 @@
 app_name: postgres-scaler
 stage: prod
-scaling_mode: direct
+scaling_mode: heuristic
 service_type: Postgres
 provider_type: Ionos
 metrics_source_type: Prometheus
@@ -9,19 +9,23 @@ ionos_config:
   password: $IONOS_PASSWORD
   contract_id: $IONOS_CONTRACT_ID
   cluster_source:
-    cluster_name_regex: "ionos-dbaas*"
+    static:
+      cluster_ids:
+        - UUID
 postgres_config:
   resources:
     cpu:
-      min_cores: 4
-      max_cores: 16
+      min_cores: 1
+      max_cores: 4
+      min_usage: 0.2
       max_usage: 0.7
     memory:
-      min_bytes: 12288
-      max_bytes: 32768
+      min_bytes: 4096
+      max_bytes: 12288
+      min_usage: 0.2
       max_usage: 0.7
   cycle_time_seconds: 60
 prometheus_config:
-  url: https://grafana.example.com/api/datasources/proxy/uid/<uid>/
-  token: $GRAFANA_TOKEN
+  url: https://api.ionos.com/telemetry/
+  token: $IONOS_METRICS_TOKEN
 metrics_exporter_port: 9100
