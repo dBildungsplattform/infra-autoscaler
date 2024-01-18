@@ -1,5 +1,5 @@
 - alert: AutoscalerHighComponentErrorRate
-  expr: rate(autoscaler_component_errors_total) / (autoscaler_cycle_time_seconds * autoscaler_instances{ready="true"}) * 100 > 10
+  expr: rate(autoscaler_component_errors_total[5m]) / (autoscaler_cycle_time_seconds * autoscaler_instances{ready="true"}) * 100 > 10
   for: 10m
   labels:
     severity: error
@@ -7,7 +7,7 @@
     summary: "High error rate for autoscaler {{ $labels.component }}"
     description: "Autoscaler {{ $labels.component }} component ({{ $labels.component_type }}) has errors for {{ $value }}% of instances"
 - alert: AutoscalerSlowCycleRate
-  expr: rate(autoscaler_cycle_count) * autoscaler_cycle_time_seconds * 100 < 50
+  expr: rate(autoscaler_cycle_count[5m]) * autoscaler_cycle_time_seconds * 100 < 50
   for: 10m
   labels:
     severity: warning
