@@ -8,5 +8,6 @@ metadata:
 spec:
   groups:
     - name: autoscaler
-{{ .Files.Get "files/alertrules.yaml" | indent 6 }}
+      rules:
+{{ .Files.Get "files/alertrules.yaml" | indent 8 }}
 {{- end }}
