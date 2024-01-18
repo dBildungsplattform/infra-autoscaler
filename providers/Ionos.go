@@ -12,10 +12,11 @@ import (
 )
 
 type ProviderConfig struct {
-	Username     s.StringFromEnv `yaml:"username"`
-	Password     s.StringFromEnv `yaml:"password"`
-	ContractId   s.IntFromEnv    `yaml:"contract_id"`
-	ServerSource *s.ServerSource `yaml:"server_source"`
+	Username      s.StringFromEnv  `yaml:"username"`
+	Password      s.StringFromEnv  `yaml:"password"`
+	ContractId    s.IntFromEnv     `yaml:"contract_id"`
+	ServerSource  *s.ServerSource  `yaml:"server_source"`
+	ClusterSource *s.ClusterSource `yaml:"cluster_source"`
 }
 
 type Ionos struct {
@@ -41,8 +42,8 @@ func (i *Ionos) Init() error {
 	return nil
 }
 
-func (i Ionos) GetServers(depth int) ([]s.Server, error) {
-	var servers []s.Server
+func (i Ionos) getServers(depth int) ([]*s.Server, error) {
+	var servers []*s.Server
 	var err error
 
 	if i.Config.ServerSource.Static != nil {
@@ -57,7 +58,7 @@ func (i Ionos) GetServers(depth int) ([]s.Server, error) {
 	return servers, nil
 }
 
-func getServersStatic(servers *[]s.Server, i Ionos) error {
+func getServersStatic(servers *[]*s.Server, i Ionos) error {
 	for _, serverSource := range *i.Config.ServerSource.Static {
 		dcServer, _, err := i.Api.ServersApi.DatacentersServersFindById(
 			context.TODO(),
@@ -72,7 +73,7 @@ func getServersStatic(servers *[]s.Server, i Ionos) error {
 	return nil
 }
 
-func getServersDynamic(servers *[]s.Server, i Ionos, depth int) error {
+func getServersDynamic(servers *[]*s.Server, i Ionos, depth int) error {
 	for _, datacenterId := range i.Config.ServerSource.Dynamic.DatacenterIds {
 		slog.Info(fmt.Sprint("Getting servers from datacenter: ", datacenterId))
 		dcServers, _, err := i.Api.ServersApi.DatacentersServersGet(context.TODO(), datacenterId).Depth(int32(depth)).XContractNumber(int32(i.Config.ContractId)).Execute()
@@ -92,22 +93,28 @@ func getServersDynamic(servers *[]s.Server, i Ionos, depth int) error {
 	return nil
 }
 
-func addServer(servers *[]s.Server, dcServer ic.Server, datacenterId string) {
-	*servers = append(*servers, s.Server{
+func addServer(servers *[]*s.Server, dcServer ic.Server, datacenterId string) {
+	*servers = append(*servers, &s.Server{
 		DatacenterId:    datacenterId,
 		ServerId:        *dcServer.Id,
 		ServerName:      *dcServer.Properties.Name,
 		CpuArchitecture: *dcServer.Properties.CpuFamily,
-		ServerCpu:       *dcServer.Properties.Cores,
-		ServerRam:       *dcServer.Properties.Ram,
-		ServerCpuUsage:  0,
-		ServerRamUsage:  0,
-		LastUpdated:     time.Now(),
-		Ready:           *dcServer.Properties.VmState == "RUNNING" && *dcServer.Metadata.State == "AVAILABLE",
+		ResourceState: s.ResourceState{
+			Cpu: &s.CpuResourceState{
+				CurrentCores: *dcServer.Properties.Cores,
+				CurrentUsage: 0,
+			},
+			Memory: &s.MemoryResourceState{
+				CurrentBytes: *dcServer.Properties.Ram,
+				CurrentUsage: 0,
+			},
+		},
+		LastUpdated: time.Now(),
+		Ready:       *dcServer.Properties.VmState == "RUNNING" && *dcServer.Metadata.State == "AVAILABLE",
 	})
 }
 
-func (i Ionos) SetServerResources(server s.Server, scalingProposal s.ScaleResource) error {
+func (i Ionos) updateServer(server s.Server, scalingProposal s.ResourceScalingProposal) error {
 	// When scaling in different directions, scaling up overrides scaling down
 	if scalingProposal.Cpu.Direction == s.ScaleUp && scalingProposal.Mem.Direction == s.ScaleDown {
 		scalingProposal.Mem.Direction = s.ScaleNone
@@ -122,8 +129,8 @@ func (i Ionos) SetServerResources(server s.Server, scalingProposal s.ScaleResour
 		return nil
 	}
 
-	targetCpu := server.ServerCpu + scalingProposal.Cpu.Amount
-	targetMem := server.ServerRam + scalingProposal.Mem.Amount
+	targetCpu := server.ResourceState.Cpu.CurrentCores + scalingProposal.Cpu.Amount
+	targetMem := server.ResourceState.Memory.CurrentBytes + scalingProposal.Mem.Amount
 
 	// Validate and scale server
 	targetServer := *ic.NewServer(ic.ServerProperties{
@@ -137,12 +144,19 @@ func (i Ionos) SetServerResources(server s.Server, scalingProposal s.ScaleResour
 	}
 
 	slog.Info(fmt.Sprintf("Target for server %s: %d cores, %d bytes\n", server.ServerName, *targetServer.Properties.Cores, *targetServer.Properties.Ram))
-	//_, _, err := i.Api.ServersApi.DatacentersServersPut(context.TODO(), server.DatacenterId, server.ServerId).Server(targetServer).XContractNumber(int32(i.Config.ContractId)).Execute()
-	//if err != nil {
-	//	errorsTotalCounter.Inc()
-	//	return fmt.Errorf("error while setting server resources: %s", err)
-	//}
+	_, _, err = i.Api.ServersApi.DatacentersServersPut(context.TODO(), server.DatacenterId, server.ServerId).Server(targetServer).XContractNumber(int32(i.Config.ContractId)).Execute()
+	if err != nil {
+		errorsTotalCounter.Inc()
+		return fmt.Errorf("error while setting server resources: %s", err)
+	}
 	return nil
+}
+
+func (i Ionos) getClusters() ([]*s.Cluster, error) {
+	var clusters []*s.Cluster
+	var err error
+
+	return clusters, err
 }
 
 func validateServer(server ic.Server, contract ic.Contract) error {
@@ -172,11 +186,22 @@ func (i Ionos) Validate() error {
 		return fmt.Errorf("password is empty")
 	}
 
-	if i.Config.ServerSource == nil {
-		return fmt.Errorf("server_source is nil")
+	if i.Config.ServerSource == nil && i.Config.ClusterSource == nil {
+		return fmt.Errorf("no scaled object source provided")
+	} else if i.Config.ServerSource != nil && i.Config.ClusterSource != nil {
+		return fmt.Errorf("both server and cluster source provided, only one must be set")
 	} else {
-		if err := i.Config.ServerSource.Validate(); err != nil {
-			return err
+		if i.Config.ServerSource != nil {
+			err := i.Config.ServerSource.Validate()
+			if err != nil {
+				return err
+			}
+		}
+		if i.Config.ClusterSource != nil {
+			err := i.Config.ClusterSource.Validate()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -197,4 +222,41 @@ func validateAndLoadContract(i *Ionos) error {
 		}
 	}
 	return fmt.Errorf("contract_id %d not found", i.Config.ContractId)
+}
+
+func (i Ionos) GetScaledObjects() ([]s.ScaledObject, error) {
+	var objects []s.ScaledObject
+	if i.Config.ServerSource != nil {
+		servers, err := i.getServers(1)
+		if err != nil {
+			return nil, fmt.Errorf("error while getting servers: %s", err)
+		}
+		for _, server := range servers {
+			objects = append(objects, server)
+		}
+	}
+	if i.Config.ClusterSource != nil {
+		clusters, err := i.getClusters()
+		if err != nil {
+			return nil, fmt.Errorf("error while getting clusters: %s", err)
+		}
+		for _, cluster := range clusters {
+			objects = append(objects, cluster)
+		}
+	}
+	return objects, nil
+}
+
+func (i Ionos) UpdateScaledObject(object s.ScaledObject, scalingProposal s.ResourceScalingProposal) error {
+	switch objectType := object.(type) {
+	case *s.Server:
+		server := objectType
+		err := i.updateServer(*server, scalingProposal)
+		if err != nil {
+			return fmt.Errorf("error while updating server %s: %s", server.ServerName, err)
+		}
+	default:
+		return fmt.Errorf("unsupported scaled object type: %s", object.GetType())
+	}
+	return nil
 }

@@ -1,12 +1,12 @@
 package shared
 
-/*** Service definition ***/
+// Interface that implements the scaling logic for a service and communicates with it if needed
 type Service interface {
 	Validate() error
 	Init() error
 	GetResources() Resources
 	GetCycleTimeSeconds() int
-	ShouldScale(Server) (ScaleResource, error)
+	ComputeScalingProposal(ScaledObject) (ResourceScalingProposal, error)
 }
 
 type ServiceState interface {

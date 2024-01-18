@@ -58,7 +58,7 @@ func initMetricsExporter() error {
 	return nil
 }
 
-func (sc ScalerApp) calculateMetrics(servers []s.Server) {
+func (sc ScalerApp) calculateMetrics(scaledObjects []s.ScaledObject) {
 	resources := sc.service.GetResources()
 
 	cpuUsedCapacity := 0
@@ -71,20 +71,22 @@ func (sc ScalerApp) calculateMetrics(servers []s.Server) {
 	capacityTotalGauge.Reset()
 	capacityUsedGauge.Reset()
 
-	for _, server := range servers {
-		cpuUsedCapacity += int(server.ServerCpu)
-		memoryUsedCapacity += int(server.ServerRam)
+	for _, object := range scaledObjects {
+		currentCpuCores := int(object.GetResourceState().Cpu.CurrentCores)
+		currentMemoryBytes := int(object.GetResourceState().Memory.CurrentBytes)
+		cpuUsedCapacity += currentCpuCores
+		memoryUsedCapacity += currentMemoryBytes
 
-		if server.Ready {
+		if object.IsReady() {
 			readyInstances++
 		} else {
 			notReadyInstances++
 		}
 
-		if int(server.ServerCpu) == resources.Cpu.MaxCores {
+		if currentCpuCores == resources.Cpu.MaxCores {
 			cpuMaxScaledInstances++
 		}
-		if int(server.ServerRam) == resources.Memory.MaxBytes {
+		if currentMemoryBytes == resources.Memory.MaxBytes {
 			memoryMaxScaledInstances++
 		}
 	}
@@ -92,13 +94,13 @@ func (sc ScalerApp) calculateMetrics(servers []s.Server) {
 	instancesGauge.WithLabelValues("false").Set(float64(notReadyInstances))
 
 	if resources.Cpu != nil {
-		totalCpuCapacity := len(servers) * resources.Cpu.MaxCores
+		totalCpuCapacity := len(scaledObjects) * resources.Cpu.MaxCores
 		capacityTotalGauge.WithLabelValues("cpu").Set(float64(totalCpuCapacity))
 		capacityUsedGauge.WithLabelValues("cpu").Set(float64(cpuUsedCapacity))
 		maxScaledInstancesGauge.WithLabelValues("cpu").Set(float64(cpuMaxScaledInstances))
 	}
 	if resources.Memory != nil {
-		totalMemoryCapacity := len(servers) * resources.Memory.MaxBytes
+		totalMemoryCapacity := len(scaledObjects) * resources.Memory.MaxBytes
 		capacityTotalGauge.WithLabelValues("memory").Set(float64(totalMemoryCapacity))
 		capacityUsedGauge.WithLabelValues("memory").Set(float64(memoryUsedCapacity))
 		maxScaledInstancesGauge.WithLabelValues("memory").Set(float64(memoryMaxScaledInstances))

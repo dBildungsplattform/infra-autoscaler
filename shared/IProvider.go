@@ -2,11 +2,11 @@ package shared
 
 import "fmt"
 
-/*** Provider definition ***/
+// Interface to get the scaled objects and update them
 type Provider interface {
 	Validate() error
-	GetServers(depth int) ([]Server, error)
-	SetServerResources(server Server, targetRes ScaleResource) error
+	GetScaledObjects() ([]ScaledObject, error)
+	UpdateScaledObject(scaledObject ScaledObject, targetRes ResourceScalingProposal) error
 }
 
 type ProviderType string
