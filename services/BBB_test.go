@@ -141,7 +141,7 @@ func testBBBApplyRulesCPU(t *testing.T, bbbParticipants int, resourceState s.Cpu
 	server := sampleBBBServer
 	server.ResourceState.Cpu = &resourceState
 
-	proposal := bbbService.applyRules(server, bbbParticipants)
+	proposal := bbbService.computeScalingProposalInternal(server, bbbParticipants)
 	if proposal.Cpu.Direction != expected {
 		t.Fatalf("Expected CPU scale direction to be %s but got %s", expected, proposal.Cpu.Direction)
 	}

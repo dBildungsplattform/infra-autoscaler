@@ -89,7 +89,7 @@ func testPostgresApplyRulesCPU(t *testing.T, resourceState s.CpuResourceState, r
 	cluster := samplePostgresCluster
 	cluster.ResourceState.Cpu = &resourceState
 
-	proposal := postgresService.applyRules(cluster)
+	proposal := postgresService.computeScalingProposalInternal(cluster)
 	if proposal.Cpu.Direction != expected {
 		t.Fatalf("Expected CPU scale direction to be %s but got %s", expected, proposal.Cpu.Direction)
 	}

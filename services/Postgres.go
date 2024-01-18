@@ -42,10 +42,10 @@ func (postgres PostgresService) ComputeScalingProposal(object s.ScaledObject) (s
 	if !cluster.Ready {
 		return s.ResourceScalingProposal{}, fmt.Errorf("cluster %s (%s) is not ready", cluster.ClusterName, cluster.ClusterId)
 	}
-	return postgres.applyRules(*cluster), nil
+	return postgres.computeScalingProposalInternal(*cluster), nil
 }
 
-func (postgres PostgresService) applyRules(cluster s.Cluster) s.ResourceScalingProposal {
+func (postgres PostgresService) computeScalingProposalInternal(cluster s.Cluster) s.ResourceScalingProposal {
 	targetResource := &s.ResourceScalingProposal{
 		Cpu: s.ScaleOp{
 			Direction: s.ScaleNone,
