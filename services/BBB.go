@@ -12,16 +12,7 @@ import (
 )
 
 type BBBService struct {
-	State  BBBServiceState  `yaml:"-"`
 	Config BBBServiceConfig `yaml:"bbb_config"`
-}
-
-type BBBServiceState struct {
-	Name string
-}
-
-func (bbb BBBServiceState) GetName() string {
-	return bbb.Name
 }
 
 type BBBServiceConfig struct {
@@ -49,10 +40,6 @@ func (bbb BBBService) Init() error {
 		return fmt.Errorf("error while registering metrics: %s", err)
 	}
 	return nil
-}
-
-func (bbb *BBBService) GetState() s.ServiceState {
-	return bbb.State
 }
 
 func (bbb *BBBService) GetConfig() BBBServiceConfig {

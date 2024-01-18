@@ -82,12 +82,8 @@ func TestParseConfigNotOk(t *testing.T) {
 func testPostgresApplyRulesCPU(t *testing.T, resourceState s.CpuResourceState, resources s.CpuResources, expected s.ScaleDirection) {
 	postgresConfig := validPostgresConfig
 	postgresConfig.Resources.Cpu = &resources
-	postgresState := &PostgresServiceState{
-		Name: "test-meeting",
-	}
 	postgresService := PostgresService{
 		Config: *postgresConfig,
-		State:  *postgresState,
 	}
 
 	cluster := samplePostgresCluster

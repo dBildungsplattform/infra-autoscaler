@@ -134,12 +134,8 @@ func TestSignedBBBAPIRequest(t *testing.T) {
 func testBBBApplyRulesCPU(t *testing.T, bbbParticipants int, resourceState s.CpuResourceState, resources s.CpuResources, expected s.ScaleDirection) {
 	bbbConfig := validBBBConfig
 	bbbConfig.Resources.Cpu = &resources
-	bbbState := &BBBServiceState{
-		Name: "test-meeting",
-	}
 	bbbService := BBBService{
 		Config: *bbbConfig,
-		State:  *bbbState,
 	}
 
 	server := sampleBBBServer

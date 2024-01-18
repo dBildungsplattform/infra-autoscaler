@@ -7,16 +7,7 @@ import (
 )
 
 type PostgresService struct {
-	State  PostgresServiceState  `yaml:"-"`
 	Config PostgresServiceConfig `yaml:"postgres_config"`
-}
-
-type PostgresServiceState struct {
-	Name string
-}
-
-func (postgres PostgresServiceState) GetName() string {
-	return postgres.Name
 }
 
 type PostgresServiceConfig struct {
@@ -26,10 +17,6 @@ type PostgresServiceConfig struct {
 
 func (postgres PostgresService) Init() error {
 	return initMetricsExporter("postgres")
-}
-
-func (postgres *PostgresService) GetState() s.ServiceState {
-	return postgres.State
 }
 
 func (postgres *PostgresService) GetConfig() PostgresServiceConfig {
@@ -164,13 +151,6 @@ func (service PostgresService) Validate() error {
 	if err := service.Config.Validate(); err != nil {
 		return err
 	}
-	if err := service.State.Validate(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (state PostgresServiceState) Validate() error {
 	return nil
 }
 
