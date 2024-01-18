@@ -121,6 +121,19 @@ func TestPostgresApplyRulesRule2(t *testing.T) {
 	}, s.ScaleUp)
 }
 
+// Check that a cluster with maximum resources and above maximum usage is not scaled up
+func TestPostgresApplyRulesRule2CantScaleUp(t *testing.T) {
+	testPostgresApplyRulesCPU(t, s.CpuResourceState{
+		CurrentCores: 4,
+		CurrentUsage: 0.6,
+	}, s.CpuResources{
+		MinCores: 2,
+		MaxCores: 4,
+		MinUsage: 0.1,
+		MaxUsage: 0.5,
+	}, s.ScaleNone)
+}
+
 // Check that a cluster with above maximum resources is scaled down
 func TestPostgresApplyRulesRule3(t *testing.T) {
 	testPostgresApplyRulesCPU(t, s.CpuResourceState{
@@ -145,4 +158,17 @@ func TestPostgresApplyRulesRule4(t *testing.T) {
 		MinUsage: 0.1,
 		MaxUsage: 0.5,
 	}, s.ScaleDown)
+}
+
+// Check that a cluster with normal usage is not scaled
+func TestPostgresApplyRulesDefault(t *testing.T) {
+	testPostgresApplyRulesCPU(t, s.CpuResourceState{
+		CurrentCores: 3,
+		CurrentUsage: 0.3,
+	}, s.CpuResources{
+		MinCores: 2,
+		MaxCores: 4,
+		MinUsage: 0.1,
+		MaxUsage: 0.5,
+	}, s.ScaleNone)
 }

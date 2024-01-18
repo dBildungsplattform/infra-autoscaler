@@ -131,7 +131,7 @@ func TestSignedBBBAPIRequest(t *testing.T) {
 	}
 }
 
-func testBBBApplyRulesCPU(t *testing.T, bbbParticipants int, resourceState s.CpuResourceState, resources s.CpuResources, expected s.ScaleDirection) {
+func testBBBApplyRulesCPU(t *testing.T, bbbParticipants int, resourceState s.CpuResourceState, resources s.CpuResources, expected s.ScaleDirection) s.ResourceScalingProposal {
 	bbbConfig := validBBBConfig
 	bbbConfig.Resources.Cpu = &resources
 	bbbService := BBBService{
@@ -145,6 +145,7 @@ func testBBBApplyRulesCPU(t *testing.T, bbbParticipants int, resourceState s.Cpu
 	if proposal.Cpu.Direction != expected {
 		t.Fatalf("Expected CPU scale direction to be %s but got %s", expected, proposal.Cpu.Direction)
 	}
+	return proposal
 }
 
 // Check that a server with below minimum resources is scaled up even if there are no participants
@@ -161,7 +162,7 @@ func TestBBBApplyRulesRule1(t *testing.T) {
 	testBBBApplyRulesCPU(t, 0, resourceState, resources, s.ScaleUp)
 }
 
-// Check that a server with participants and above maximum usage is scaled up
+// Check that a server with participants, below maximum cores and above maximum usage is scaled up
 func TestBBBApplyRulesRule2ScaleUp(t *testing.T) {
 	resources := s.CpuResources{
 		MinCores: 2,
@@ -173,6 +174,37 @@ func TestBBBApplyRulesRule2ScaleUp(t *testing.T) {
 		CurrentUsage: 0.6,
 	}
 	testBBBApplyRulesCPU(t, 2, resourceState, resources, s.ScaleUp)
+}
+
+// Check that a server with participants, maximum cores and above maximum usage is not scaled up
+func TestBBBApplyRulesRule2CantScaleUp(t *testing.T) {
+	resources := s.CpuResources{
+		MinCores: 2,
+		MaxCores: 4,
+		MaxUsage: 0.5,
+	}
+	resourceState := s.CpuResourceState{
+		CurrentCores: 4,
+		CurrentUsage: 0.6,
+	}
+	testBBBApplyRulesCPU(t, 2, resourceState, resources, s.ScaleNone)
+}
+
+// Check the case where a server should be scaled up by more than 1 core
+func TestBBBApplyRulesRule2VerifyHeuristic(t *testing.T) {
+	resources := s.CpuResources{
+		MinCores: 2,
+		MaxCores: 10,
+		MaxUsage: 0.5,
+	}
+	resourceState := s.CpuResourceState{
+		CurrentCores: 4,
+		CurrentUsage: 1,
+	}
+	proposal := testBBBApplyRulesCPU(t, 2, resourceState, resources, s.ScaleUp)
+	if proposal.Cpu.Amount != 2 {
+		t.Fatalf("Expected CPU cores to be 2 but got %d", proposal.Cpu.Amount)
+	}
 }
 
 // Check that a server with 0 participants and minimum resources is not modified
@@ -189,6 +221,20 @@ func TestBBBApplyRulesRule3NoChanges(t *testing.T) {
 	testBBBApplyRulesCPU(t, 0, resourceState, resources, s.ScaleNone)
 }
 
+// Check that a server with 0 participants and above maximum usage is scaled up
+func TestBBBApplyRulesRule3HighUsage(t *testing.T) {
+	resources := s.CpuResources{
+		MinCores: 2,
+		MaxCores: 4,
+		MaxUsage: 0.5,
+	}
+	resourceState := s.CpuResourceState{
+		CurrentCores: 2,
+		CurrentUsage: 0.9,
+	}
+	testBBBApplyRulesCPU(t, 0, resourceState, resources, s.ScaleUp)
+}
+
 // Check that a server with 0 participants and above minimum resources is scaled down
 func TestBBBApplyRulesRule3ScaleDown(t *testing.T) {
 	resources := s.CpuResources{
@@ -203,6 +249,20 @@ func TestBBBApplyRulesRule3ScaleDown(t *testing.T) {
 	testBBBApplyRulesCPU(t, 0, resourceState, resources, s.ScaleDown)
 }
 
+// Check that a server with 0 participants, above minimum resources and above maximum usage is scaled down
+func TestBBBApplyRulesRule3HighUsageScaleDown(t *testing.T) {
+	resources := s.CpuResources{
+		MinCores: 2,
+		MaxCores: 4,
+		MaxUsage: 0.5,
+	}
+	resourceState := s.CpuResourceState{
+		CurrentCores: 3,
+		CurrentUsage: 0.9,
+	}
+	testBBBApplyRulesCPU(t, 0, resourceState, resources, s.ScaleDown)
+}
+
 // Check that a server with participants and below maximum usage is not modified
 func TestBBBApplyRulesRuleDefault(t *testing.T) {
 	resources := s.CpuResources{
@@ -212,6 +272,20 @@ func TestBBBApplyRulesRuleDefault(t *testing.T) {
 	}
 	resourceState := s.CpuResourceState{
 		CurrentCores: 3,
+		CurrentUsage: 0.4,
+	}
+	testBBBApplyRulesCPU(t, 2, resourceState, resources, s.ScaleNone)
+}
+
+// Check that a server with participants, below maximum usage and above maximum cores is not modified
+func TestBBBApplyRulesRuleDefaultAboveMaximum(t *testing.T) {
+	resources := s.CpuResources{
+		MinCores: 2,
+		MaxCores: 4,
+		MaxUsage: 0.5,
+	}
+	resourceState := s.CpuResourceState{
+		CurrentCores: 5,
 		CurrentUsage: 0.4,
 	}
 	testBBBApplyRulesCPU(t, 2, resourceState, resources, s.ScaleNone)
