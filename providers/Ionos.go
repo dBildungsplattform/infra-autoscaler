@@ -7,6 +7,7 @@ import (
 	s "scaler/shared"
 	"time"
 
+	icDbaas "github.com/ionos-cloud/sdk-go-dbaas-postgres"
 	ic "github.com/ionos-cloud/sdk-go/v6"
 	"golang.org/x/exp/slog"
 )
@@ -20,15 +21,20 @@ type ProviderConfig struct {
 }
 
 type Ionos struct {
-	Config   ProviderConfig `yaml:"ionos_config"`
-	Contract *ic.Contract   `yaml:"-"`
-	Stage    s.Stage        `yaml:"-"`
-	Api      ic.APIClient   `yaml:"-"`
-	Servers  []s.Server     `yaml:"-"`
+	Config   ProviderConfig    `yaml:"ionos_config"`
+	Contract *ic.Contract      `yaml:"-"`
+	Stage    s.Stage           `yaml:"-"`
+	Api      ic.APIClient      `yaml:"-"`
+	DbaasApi icDbaas.APIClient `yaml:"-"`
 }
 
 func (i *Ionos) Init() error {
 	i.Api = *ic.NewAPIClient(ic.NewConfiguration(
+		string(i.Config.Username),
+		string(i.Config.Password),
+		"",
+		""))
+	i.DbaasApi = *icDbaas.NewAPIClient(icDbaas.NewConfiguration(
 		string(i.Config.Username),
 		string(i.Config.Password),
 		"",
@@ -68,7 +74,8 @@ func getServersStatic(servers *[]*s.Server, i Ionos) error {
 			return fmt.Errorf("error while getting server %s in datacenter %s: %s", serverSource.ServerId, serverSource.DatacenterId, err)
 		}
 		slog.Info(fmt.Sprintf("Found server %s (%s) in datacenter %s\n", *dcServer.Properties.Name, serverSource.ServerId, serverSource.DatacenterId))
-		addServer(servers, dcServer, serverSource.DatacenterId)
+		server := responseToServer(dcServer, serverSource.DatacenterId)
+		*servers = append(*servers, &server)
 	}
 	return nil
 }
@@ -85,7 +92,8 @@ func getServersDynamic(servers *[]*s.Server, i Ionos, depth int) error {
 		for _, dcServer := range *dcServers.Items {
 			if match, _ := regexp.MatchString(i.Config.ServerSource.Dynamic.ServerNameRegex, *dcServer.Properties.Name); match {
 				matchCount++
-				addServer(servers, dcServer, datacenterId)
+				server := responseToServer(dcServer, datacenterId)
+				*servers = append(*servers, &server)
 			}
 		}
 		slog.Info(fmt.Sprintf("Matched %d servers in datacenter %s\n", matchCount, datacenterId))
@@ -93,25 +101,25 @@ func getServersDynamic(servers *[]*s.Server, i Ionos, depth int) error {
 	return nil
 }
 
-func addServer(servers *[]*s.Server, dcServer ic.Server, datacenterId string) {
-	*servers = append(*servers, &s.Server{
+func responseToServer(response ic.Server, datacenterId string) s.Server {
+	return s.Server{
 		DatacenterId:    datacenterId,
-		ServerId:        *dcServer.Id,
-		ServerName:      *dcServer.Properties.Name,
-		CpuArchitecture: *dcServer.Properties.CpuFamily,
+		ServerId:        *response.Id,
+		ServerName:      *response.Properties.Name,
+		CpuArchitecture: *response.Properties.CpuFamily,
 		ResourceState: s.ResourceState{
 			Cpu: &s.CpuResourceState{
-				CurrentCores: *dcServer.Properties.Cores,
+				CurrentCores: *response.Properties.Cores,
 				CurrentUsage: 0,
 			},
 			Memory: &s.MemoryResourceState{
-				CurrentBytes: *dcServer.Properties.Ram,
+				CurrentBytes: *response.Properties.Ram,
 				CurrentUsage: 0,
 			},
 		},
 		LastUpdated: time.Now(),
-		Ready:       *dcServer.Properties.VmState == "RUNNING" && *dcServer.Metadata.State == "AVAILABLE",
-	})
+		Ready:       *response.Properties.VmState == "RUNNING" && *response.Metadata.State == "AVAILABLE",
+	}
 }
 
 func (i Ionos) updateServer(server s.Server, scalingProposal s.ResourceScalingProposal) error {
@@ -156,7 +164,103 @@ func (i Ionos) getClusters() ([]*s.Cluster, error) {
 	var clusters []*s.Cluster
 	var err error
 
-	return clusters, err
+	if i.Config.ClusterSource.Static != nil {
+		err = getClustersStatic(&clusters, i)
+	} else if i.Config.ClusterSource.Dynamic != nil {
+		err = getClustersDynamic(&clusters, i)
+	}
+	if err != nil {
+		errorsTotalCounter.Inc()
+		return nil, err
+	}
+	return clusters, nil
+}
+
+func getClustersStatic(clusters *[]*s.Cluster, i Ionos) error {
+	for _, clusterId := range i.Config.ClusterSource.Static.ClusterIds {
+		response, _, err := i.DbaasApi.ClustersApi.ClustersFindById(context.TODO(), clusterId).Execute()
+		if err != nil {
+			return fmt.Errorf("error while getting cluster %s: %s", clusterId, err)
+		}
+
+		slog.Info(fmt.Sprintf("Found cluster %s (%s)\n", *response.Properties.DisplayName, clusterId))
+		cluster := responseToCluster(response)
+		*clusters = append(*clusters, &cluster)
+	}
+	return nil
+}
+
+func getClustersDynamic(clusters *[]*s.Cluster, i Ionos) error {
+	clustersResponse, _, err := i.DbaasApi.ClustersApi.ClustersGet(context.TODO()).Execute()
+	if err != nil {
+		return fmt.Errorf("error while getting clusters: %s", err)
+	}
+	for _, response := range *clustersResponse.Items {
+		if match, _ := regexp.MatchString(i.Config.ClusterSource.Dynamic.ClusterNameRegex, *response.Properties.DisplayName); match {
+			slog.Info(fmt.Sprintf("Matched cluster %s (%s)\n", *response.Properties.DisplayName, *response.Id))
+			cluster := responseToCluster(response)
+			*clusters = append(*clusters, &cluster)
+		}
+	}
+	return nil
+}
+
+func responseToCluster(response icDbaas.ClusterResponse) s.Cluster {
+	return s.Cluster{
+		ClusterId:   *response.Id,
+		ClusterName: *response.Properties.DisplayName,
+		ResourceState: s.ResourceState{
+			Cpu: &s.CpuResourceState{
+				CurrentCores: *response.Properties.Cores,
+				CurrentUsage: 0,
+			},
+			Memory: &s.MemoryResourceState{
+				CurrentBytes: *response.Properties.Ram,
+				CurrentUsage: 0,
+			},
+		},
+		LastUpdated: time.Now(),
+		Ready:       *response.Metadata.State == "AVAILABLE",
+	}
+}
+
+func (i Ionos) updateCluster(cluster s.Cluster, scalingProposal s.ResourceScalingProposal) error {
+	if scalingProposal.Cpu.Direction == s.ScaleNone && scalingProposal.Mem.Direction == s.ScaleNone {
+		return nil
+	}
+
+	targetCpu := cluster.ResourceState.Cpu.CurrentCores + scalingProposal.Cpu.Amount
+	targetMem := cluster.ResourceState.Memory.CurrentBytes + scalingProposal.Mem.Amount
+
+	// Validate and scale cluster
+	targetClusterProperties := *icDbaas.NewPatchClusterProperties()
+	targetClusterProperties.Cores = &targetCpu
+	targetClusterProperties.Ram = &targetMem
+	targetCluster := *icDbaas.NewPatchClusterRequest()
+	targetCluster.Properties = &targetClusterProperties
+
+	validCluster := validateCluster(targetCluster, *i.Contract)
+	if !validCluster {
+		errorsTotalCounter.Inc()
+		return fmt.Errorf("cluster is not valid")
+	}
+
+	slog.Info(fmt.Sprintf("Target for cluster %s: %d cores, %d bytes\n", cluster.ClusterName, *targetCluster.Properties.Cores, *targetCluster.Properties.Ram))
+	_, _, err := i.DbaasApi.ClustersApi.ClustersPatch(context.TODO(), cluster.ClusterId).PatchClusterRequest(targetCluster).Execute()
+	if err != nil {
+		errorsTotalCounter.Inc()
+		return fmt.Errorf("error while setting cluster resources: %s", err)
+	}
+	return nil
+}
+
+func validateCluster(cluster icDbaas.PatchClusterRequest, contract ic.Contract) bool {
+	// TODO: Validate patch request against contract limits
+	//if *cluster.Properties.Cores > *contract.Properties.ResourceLimits.CoresPerCluster || *cluster.Properties.Ram > *contract.Properties.ResourceLimits.RamPerCluster {
+	//	return false
+	//}
+
+	return true
 }
 
 func validateServer(server ic.Server, contract ic.Contract) error {
@@ -254,6 +358,12 @@ func (i Ionos) UpdateScaledObject(object s.ScaledObject, scalingProposal s.Resou
 		err := i.updateServer(*server, scalingProposal)
 		if err != nil {
 			return fmt.Errorf("error while updating server %s: %s", server.ServerName, err)
+		}
+	case *s.Cluster:
+		cluster := objectType
+		err := i.updateCluster(*cluster, scalingProposal)
+		if err != nil {
+			return fmt.Errorf("error while updating cluster %s: %s", cluster.ClusterName, err)
 		}
 	default:
 		return fmt.Errorf("unsupported scaled object type: %s", object.GetType())
