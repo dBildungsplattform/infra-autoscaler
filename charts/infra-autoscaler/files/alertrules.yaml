@@ -1,0 +1,40 @@
+- alert: AutoscalerHighComponentErrorRate
+  expr: rate(autoscaler_component_errors_total[5m]) / (autoscaler_cycle_time_seconds * autoscaler_instances{ready="true"}) * 100 > 10
+  for: 10m
+  labels:
+    severity: error
+  annotations:
+    summary: "High error rate for autoscaler {{ $labels.component }}"
+    description: "Autoscaler {{ $labels.component }} component ({{ $labels.component_type }}) has errors for {{ $value }}% of instances"
+- alert: AutoscalerSlowCycleRate
+  expr: rate(autoscaler_cycle_count[5m]) * autoscaler_cycle_time_seconds * 100 < 50
+  for: 10m
+  labels:
+    severity: warning
+  annotations:
+    summary: "Autoscaler is taking longer than expected"
+    description: "The autoscaler is running at {{ $value }}% of its expected speed"
+- alert: AutoscalerHighCapacityUsage
+  expr: autoscaler_capacity_used / autoscaler_capacity_total * 100 > 80
+  for: 10m
+  labels:
+    severity: info
+  annotations:
+    summary: "Autoscaler is close to its max capacity"
+    description: "The autoscaler is using {{ $value }}% of its {{ $labels.resource_type }} capacity"
+- alert: AutoscalerMaxScaledInstances
+  for: 10m
+  expr: autoscaler_max_scaled_instances > 0
+  labels:
+    severity: info
+  annotations:
+    summary: "Autoscaler has instances scaled to the max"
+    description: "{{ $value }} instances have their {{ $labels.resource_type }} scaled to the maximum"
+- alert: AutoscalerNotScaling
+  expr: autoscaler_last_scale_time > 0 and time() - autoscaler_last_scale_time > 86400
+  for: 10m
+  labels:
+    severity: info
+  annotations:
+    summary: "Autoscaler hasn't scaled in 24 hours"
+    description: "The autoscaler hasn't scaled up or down in the last 24 hours, either because of some issue or because the instances are underutilized"

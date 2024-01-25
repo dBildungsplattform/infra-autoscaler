@@ -151,7 +151,7 @@ func (bbb BBBService) computeScalingProposalInternal(server s.Server, participan
 
 	// Scaling rules:
 	// 1. Scale up if current resource is below configured minimum
-	// 2. Scale up if current resource usage exceeds maximum usage
+	// 2. Scale up if current resource usage exceeds maximum usage and there are participants
 	// Add enough resources to either reach usage below the maximum usage or the maximum amount of resources
 	// 3. Scale down to the configured minimum if there are no participants
 
@@ -163,7 +163,7 @@ func (bbb BBBService) computeScalingProposalInternal(server s.Server, participan
 	}
 
 	// Rule 2 CPU
-	if cpuMaxUsageDelta := server.ResourceState.Cpu.CurrentUsage - bbb.Config.Resources.Cpu.MaxUsage; cpuMaxUsageDelta > 0 && server.ResourceState.Cpu.CurrentCores < int32(bbb.Config.Resources.Cpu.MaxCores) {
+	if cpuMaxUsageDelta := server.ResourceState.Cpu.CurrentUsage - bbb.Config.Resources.Cpu.MaxUsage; cpuMaxUsageDelta > 0 && server.ResourceState.Cpu.CurrentCores < int32(bbb.Config.Resources.Cpu.MaxCores) && participantsCount > 0 {
 		targetResource.Cpu.Direction = s.ScaleUp
 		targetResource.Cpu.Reason = targetResource.Cpu.Reason + ",Rule 2: usage above maximum"
 		cpuInc := cpuMaxUsageDelta * float32(server.ResourceState.Cpu.CurrentCores) / server.ResourceState.Cpu.CurrentUsage
@@ -179,7 +179,7 @@ func (bbb BBBService) computeScalingProposalInternal(server s.Server, participan
 	}
 
 	// Rule 2 memory
-	if memMaxUsageDelta := server.ResourceState.Memory.CurrentUsage - bbb.Config.Resources.Memory.MaxUsage; memMaxUsageDelta > 0 && server.ResourceState.Memory.CurrentBytes < int32(bbb.Config.Resources.Memory.MaxBytes) {
+	if memMaxUsageDelta := server.ResourceState.Memory.CurrentUsage - bbb.Config.Resources.Memory.MaxUsage; memMaxUsageDelta > 0 && server.ResourceState.Memory.CurrentBytes < int32(bbb.Config.Resources.Memory.MaxBytes) && participantsCount > 0 {
 		targetResource.Mem.Direction = s.ScaleUp
 		targetResource.Mem.Reason = targetResource.Mem.Reason + ",Rule 2: usage above maximum"
 		memInc := memMaxUsageDelta * float32(server.ResourceState.Memory.CurrentBytes) / server.ResourceState.Memory.CurrentUsage

@@ -1,0 +1,13 @@
+{{- if .Values.prometheusRules.create -}}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "infra-autoscaler.fullname" . }}
+  labels:
+    {{- include "infra-autoscaler.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: autoscaler
+      rules:
+{{ .Files.Get "files/alertrules.yaml" | indent 8 }}
+{{- end }}

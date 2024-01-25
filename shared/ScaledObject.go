@@ -5,6 +5,7 @@ type ScaledObject interface {
 	GetName() string
 	GetResourceState() ResourceState
 	SetResourceState(resourceState ResourceState)
+	IsReady() bool
 }
 
 type ScaledObjectType string

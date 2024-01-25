@@ -30,6 +30,10 @@ func (c *Cluster) SetResourceState(resourceState ResourceState) {
 	c.ResourceState = resourceState
 }
 
+func (c Cluster) IsReady() bool {
+	return c.Ready
+}
+
 type ClusterSource struct {
 	Dynamic *ClusterDynamicSource `yaml:"dynamic"`
 	Static  *ClusterStaticSource  `yaml:"static"`

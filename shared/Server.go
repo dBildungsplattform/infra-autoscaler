@@ -32,6 +32,10 @@ func (s *Server) SetResourceState(resourceState ResourceState) {
 	s.ResourceState = resourceState
 }
 
+func (s Server) IsReady() bool {
+	return s.Ready
+}
+
 type ServerSource struct {
 	Static  *ServerStaticSource  `yaml:"static"`
 	Dynamic *ServerDynamicSource `yaml:"dynamic"`
