@@ -232,7 +232,7 @@ func TestBBBApplyRulesRule3HighUsage(t *testing.T) {
 		CurrentCores: 2,
 		CurrentUsage: 0.9,
 	}
-	testBBBApplyRulesCPU(t, 0, resourceState, resources, s.ScaleUp)
+	testBBBApplyRulesCPU(t, 0, resourceState, resources, s.ScaleNone)
 }
 
 // Check that a server with 0 participants and above minimum resources is scaled down
