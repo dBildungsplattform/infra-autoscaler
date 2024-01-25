@@ -9,14 +9,6 @@ type Service interface {
 	ComputeScalingProposal(ScaledObject) (ResourceScalingProposal, error)
 }
 
-type ServiceState interface {
-	GetName() string
-}
-
-type ServiceConfig interface {
-	GetProviderType() ProviderType
-}
-
 type ServiceType string
 
 const (

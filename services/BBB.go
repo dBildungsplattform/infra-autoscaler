@@ -12,16 +12,7 @@ import (
 )
 
 type BBBService struct {
-	State  BBBServiceState  `yaml:"-"`
 	Config BBBServiceConfig `yaml:"bbb_config"`
-}
-
-type BBBServiceState struct {
-	Name string
-}
-
-func (bbb BBBServiceState) GetName() string {
-	return bbb.Name
 }
 
 type BBBServiceConfig struct {
@@ -49,10 +40,6 @@ func (bbb BBBService) Init() error {
 		return fmt.Errorf("error while registering metrics: %s", err)
 	}
 	return nil
-}
-
-func (bbb *BBBService) GetState() s.ServiceState {
-	return bbb.State
 }
 
 func (bbb *BBBService) GetConfig() BBBServiceConfig {
@@ -144,11 +131,11 @@ func (bbb BBBService) ComputeScalingProposal(object s.ScaledObject) (s.ResourceS
 		return s.ResourceScalingProposal{}, fmt.Errorf("error while getting participants count: %s", err)
 	}
 
-	return applyRules(*server, participantsCount, bbb), nil
+	return bbb.computeScalingProposalInternal(*server, participantsCount), nil
 }
 
 // Applies the BBB scaling rules to decide how to scale
-func applyRules(server s.Server, participantsCount int, bbb BBBService) s.ResourceScalingProposal {
+func (bbb BBBService) computeScalingProposalInternal(server s.Server, participantsCount int) s.ResourceScalingProposal {
 	targetResource := s.ResourceScalingProposal{
 		Cpu: s.ScaleOp{
 			Direction: s.ScaleNone,

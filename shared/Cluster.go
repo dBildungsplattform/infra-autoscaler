@@ -7,13 +7,11 @@ import (
 )
 
 type Cluster struct {
-	ClusterId          string `yaml:"cluster_id"`
-	ClusterName        string `yaml:"cluster_name"`
-	ResourceState      ResourceState
-	ClusterStorageSize int32     `yaml:"cluster_storage_size"`
-	ClusterStorageType string    `yaml:"cluster_storage_type"`
-	LastUpdated        time.Time `yaml:"last_updated"`
-	Ready              bool      `yaml:"ready"`
+	ClusterId     string `yaml:"cluster_id"`
+	ClusterName   string `yaml:"cluster_name"`
+	ResourceState ResourceState
+	LastUpdated   time.Time `yaml:"last_updated"`
+	Ready         bool      `yaml:"ready"`
 }
 
 func (c Cluster) GetType() ScaledObjectType {
