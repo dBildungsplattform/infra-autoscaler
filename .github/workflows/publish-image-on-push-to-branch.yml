@@ -19,6 +19,6 @@ jobs:
     with:
       image_name: "infra-autoscaler"
       run_trivy_scan: true
-      tag_generation: "ticket_from_branch"
+      image_tag_generation: "ticket_from_branch"
       add_latest_tag: false
       container_registry: "ghcr.io"
