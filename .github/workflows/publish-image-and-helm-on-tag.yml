@@ -15,15 +15,15 @@ jobs:
       packages: write
       security-events: write
       contents: read
-    uses: dBildungsplattform/dbp-github-workflows/.github/workflows/image-publish-trivy.yaml@2.0.0
+    uses: dBildungsplattform/dbp-github-workflows/.github/workflows/image-publish-trivy.yaml@5.0.0
     with:
       image_name: "infra-autoscaler"
       run_trivy_scan: true
-      tag_generation: "version_git_tag"
+      image_tag_generation: "version_git_tag"
       add_latest_tag: true
       container_registry: "ghcr.io"
   publish_helm:
-    uses: dBildungsplattform/dbp-github-workflows/.github/workflows/chart-release.yaml@4.0.0
+    uses: dBildungsplattform/dbp-github-workflows/.github/workflows/chart-release.yaml@5.0.0
     secrets: inherit
     with:
       chart_name: infra-autoscaler

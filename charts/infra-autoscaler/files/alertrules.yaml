@@ -1,11 +1,19 @@
 - alert: AutoscalerHighComponentErrorRate
-  expr: rate(autoscaler_component_errors_total[5m]) / (autoscaler_cycle_time_seconds * autoscaler_instances{ready="true"}) * 100 > 10
-  for: 10m
+  expr: rate(autoscaler_component_errors_total[5m]) * on(instance) group_left autoscaler_cycle_time_seconds / on(instance) group_left autoscaler_instances_count{ready="true"} * 100 > 10
+  for: 5m
   labels:
     severity: error
   annotations:
     summary: "High error rate for autoscaler {{ $labels.component }}"
     description: "Autoscaler {{ $labels.component }} component ({{ $labels.component_type }}) has errors for {{ $value }}% of instances"
+- alert: AutoscalerNoReadyInstances
+  expr: autoscaler_instances_count{ready="true"} == 0
+  for: 5m
+  labels:
+    severity: error
+  annotations:
+    summary: "Autoscaler has no ready instances"
+    description: ""
 - alert: AutoscalerSlowCycleRate
   expr: rate(autoscaler_cycle_count[5m]) * autoscaler_cycle_time_seconds * 100 < 50
   for: 10m
