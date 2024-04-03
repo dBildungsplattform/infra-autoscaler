@@ -103,3 +103,53 @@ func TestValidateMemoryResourcesMaxUsageGreaterThanOne(t *testing.T) {
 	}
 	ValidateFail(t, memoryResources)
 }
+
+func TestValidateReplicaResourcesOK(t *testing.T) {
+	ReplicaResources := &ReplicaResources{
+		MinReplicas: 2,
+		MaxReplicas: 4,
+		MinUsage: 0.3,
+		MaxUsage: 0.7,
+	}
+	ValidatePass(t, ReplicaResources)
+}
+
+func TestValidateReplicaResourcesMinReplicasZero(t *testing.T) {
+	ReplicaResources := &ReplicaResources{
+		MinReplicas: 0,
+		MaxReplicas: 4,
+		MinUsage: 0.3,
+		MaxUsage: 0.7,
+	}
+	ValidateFail(t, ReplicaResources)
+}
+
+func TestValidateReplicaResourcesMaxLessThanMin(t *testing.T) {
+	ReplicaResources := &ReplicaResources{
+		MinReplicas: 2,
+		MaxReplicas: 1,
+		MinUsage: 0.3,
+		MaxUsage: 0.7,
+	}
+	ValidateFail(t, ReplicaResources)
+}
+
+func TestValidateReplicaResourcesMaxUsageGreaterThanOne(t *testing.T) {
+	ReplicaResources := &ReplicaResources{
+		MinReplicas: 2,
+		MaxReplicas: 4,
+		MinUsage: 0.3,
+		MaxUsage: 1.1,
+	}
+	ValidateFail(t, ReplicaResources)
+}
+
+func TestValidateReplicaResourcesMaxUsageZero(t *testing.T) {
+	ReplicaResources := &ReplicaResources{
+		MinReplicas: 2,
+		MaxReplicas: 4,
+		MinUsage: 0.3,
+		MaxUsage: 0,
+	}
+	ValidateFail(t, ReplicaResources)
+}
