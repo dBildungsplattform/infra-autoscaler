@@ -72,7 +72,7 @@ const (
 	ScaleNone = "none"
 )
 
-func (r Resources) Validate() error {//TODO replicas hinzufügen?
+func (r Resources) Validate() error {
 	if cpu := r.Cpu; cpu != nil {
 		if err := cpu.Validate(); err != nil {
 			return err
@@ -83,8 +83,13 @@ func (r Resources) Validate() error {//TODO replicas hinzufügen?
 			return err
 		}
 	}
-	if r.Cpu == nil && r.Memory == nil {
-		return fmt.Errorf("resources.cpu and resources.memory are nil, at least one must be set")
+	if replica := r.Replica; replica != nil {
+		if err := replica.Validate(); err != nil {
+			return err
+		}
+	}
+	if r.Cpu == nil && r.Memory == nil && r.Replica == nil{
+		return fmt.Errorf("resources.cpu and resources.memory and resources.replica are nil, at least one must be set")
 	}
 	return nil
 }
