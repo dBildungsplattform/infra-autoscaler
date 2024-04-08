@@ -6,6 +6,7 @@ import "fmt"
 type Resources struct {
 	Cpu    *CpuResources    `yaml:"cpu"`
 	Memory *MemoryResources `yaml:"memory"`
+	Replica *ReplicaResources `yaml:"replicas"`
 }
 
 // TODO: replace this with a generic resource interface
@@ -23,9 +24,17 @@ type MemoryResources struct {
 	MaxUsage float32 `yaml:"max_usage"`
 }
 
+type ReplicaResources struct {
+	MinReplicas int 	`yaml:"min_replicas"`
+	MaxReplicas	int 	`yaml:"max_replicas"`
+	MinUsage	float32	`yaml:"min_usage"`
+	MaxUsage	float32	`yaml:"max_usage"`
+}
+
 type ResourceState struct {
 	Cpu    *CpuResourceState
 	Memory *MemoryResourceState
+	Replica *ReplicaResourceState
 }
 
 type CpuResourceState struct {
@@ -38,9 +47,15 @@ type MemoryResourceState struct {
 	CurrentUsage float32
 }
 
+type ReplicaResourceState struct {
+	CurrentReplicas int
+	CurrentUsage 	float32
+}
+
 type ResourceScalingProposal struct {
 	Cpu ScaleOp
 	Mem ScaleOp
+	Replica ScaleOp
 }
 
 type ScaleOp struct {
@@ -68,8 +83,13 @@ func (r Resources) Validate() error {
 			return err
 		}
 	}
-	if r.Cpu == nil && r.Memory == nil {
-		return fmt.Errorf("resources.cpu and resources.memory are nil, at least one must be set")
+	if replica := r.Replica; replica != nil {
+		if err := replica.Validate(); err != nil {
+			return err
+		}
+	}
+	if r.Cpu == nil && r.Memory == nil && r.Replica == nil{
+		return fmt.Errorf("resources.cpu and resources.memory and resources.replica are nil, at least one must be set")
 	}
 	return nil
 }
@@ -102,6 +122,22 @@ func (m MemoryResources) Validate() error {
 	}
 	if m.MaxUsage <= m.MinUsage || m.MaxUsage > 1 {
 		return fmt.Errorf("memory.max_usage must be greater than min_usage (%f) and less than or equal to 1 but got %f", m.MinUsage, m.MaxUsage)
+	}
+	return nil
+}
+
+func (r ReplicaResources) Validate() error {
+	if r.MinReplicas < 1 {
+		return fmt.Errorf("replicas.min_replicas must be greater than or equal to 1 but got %d", r.MinReplicas)
+	}
+	if r.MaxReplicas < r.MinReplicas {
+		return fmt.Errorf("r.MaxReplicas must be greater than or equal to min_replicas (%d) but got %d", r.MinReplicas, r.MaxReplicas)
+	}
+	if r.MinUsage < 0 || r.MinUsage > 1 {
+		return fmt.Errorf("replicas.min_usage must be greater than 0 and less than or equal to 1 but got %f", r.MinUsage)
+	}
+	if r.MaxUsage <= r.MinUsage || r.MaxUsage > 1 {
+		return fmt.Errorf("replicas.max_usage must be greater than min_usage (%f) and less than or equal to 1 but got %f", r.MinUsage, r.MaxUsage)
 	}
 	return nil
 }
