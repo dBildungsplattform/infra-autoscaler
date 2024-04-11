@@ -72,7 +72,7 @@ const (
 	ScaleNone = "none"
 )
 
-func (r Resources) Validate() error {//TODO replicas hinzufügen?
+func (r Resources) Validate() error {
 	if cpu := r.Cpu; cpu != nil {
 		if err := cpu.Validate(); err != nil {
 			return err
