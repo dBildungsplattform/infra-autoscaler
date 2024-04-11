@@ -1,4 +1,7 @@
-//Telekom Cloud OTC DNS management
+//Telekom Cloud OTC DNS management for the BBB autoscaler implementation
+//Creation of a new OTC DNS record
+//Deletion of a existing OTC DNS record
+//Updating of the IP in a OTC DNS record
 package otcdns
 
 import (
@@ -11,9 +14,8 @@ import (
 )
 
 const (
-	dnsRecordTypeTxt     string = "TXT"
-	dnsRecordDescription string = "ACME Challenge"
-	acmeChallengePrefix  string = "_acme-challenge."
+	dnsRecordTypeA     string = "A"
+	dnsRecordDescription string = "BBB Autoscaler"
 )
 
 //
@@ -21,11 +23,6 @@ const (
 //
 type OtcDnsClient struct {
 	Sc *otc.ServiceClient
-
-	//
-	// Optional subdomain, which will be inserted between "_acme-challenge." and the zone name.
-	//
-	Subdomain string
 }
 
 func NewDNSV2Client() (*OtcDnsClient, error) {
@@ -50,70 +47,132 @@ func NewDNSV2Client() (*OtcDnsClient, error) {
 	return &OtcDnsClient{Sc: serviceClient}, nil
 }
 
-type RecordSetConfig struct {
-	ZoneID   string
-	Name     string
-	Description string
-	Type     string
-	Records  []string
-	TTL      int
-}
+// ===========================================================================
+// Zones
+// ===========================================================================
 
-//IPs sollen durch IONOS DHCP auto erzeugt werden.
-// func (i Ionos) CreateIPAddress () string{
-// 	Ipblocks := *openapiclient.NewIpBlock(*openapiclient.NewIpBlockProperties("eu/txl", int32(5)))
+//
+// Retrieves a Zone data structure by its name.
+// https://pkg.go.dev/github.com/opentelekomcloud/gophertelekomcloud@v0.3.2/openstack/dns/v2/zones
+// github.com/opentelekomcloud/gophertelekomcloud/openstack/dns/v2/zones
+//
+func (dnsClient *OtcDnsClient) GetHostedZone(zoneName string) (*zones.Zone, error) {
 
-//     createdIP, _, err := i.Api.IPBlocksApi.IpblocksPost(ctx, datacenterId).Ipblocks(ipblock).Pretty(pretty).Depth(depth).XContractNumber(xContractNumber).Execute()
-//     if err != nil {
-//         return nil, fmt.Errorf("error when calling `IPBlocksApi.IpblocksPost`: %w", err)
-//     }
-//     return &createdIP, nil
-// }
-
-// func (i Ionos) DeleteIPAddress (IPValue string) {
-// 	deleteIP, _, err := i.Api.IPBlocksApi.IpblocksDelete(ctx, IPValue).Pretty(pretty).Depth(depth).XContractNumber(xContractNumber).Execute()
-//     if err != nil {
-//         return nil, fmt.Errorf("error when calling `IPBlocksApi.IpblocksDelete`: %w", err)
-//     }
-// }
-
-//Nutzung von SDK
-func (dnsClient *OtcDnsClient) CreateDNSRecord (dnsClient *golangsdk.ServiceClient, config RecordSetConfig) (*recordsets.RecordSet, error) {
-
-	createOpts := recordsets.CreateOpts{
-		Name:    config.Name,
-		Description: config.Description
-		Type:    config.Type,
-		Records: config.Records,
-		TTL:     &config.TTL,
+	listOpts := zones.ListOpts{
+		Name: zoneName,
 	}
 
-	recordset, err := recordsets.Create(dnsClient, config.ZoneID, createOpts).Extract()
+	allPages, err := zones.List(dnsClient.Sc, listOpts).AllPages()
+	if err != nil {
+		return nil, fmt.Errorf("zone %s not found: %s", zoneName, err)
+	}
+
+	allZones, err := zones.ExtractZones(allPages)
+	if err != nil {
+		return nil, fmt.Errorf("zone %s extraction failed: %s", zoneName, err)
+	}
+
+	// Debug
+	//for _, zone := range allZones {
+	//	fmt.Printf("%+v\n", zone)
+	//}
+
+	// We need exactly 1 zone to operate on
+	if len(allZones) != 1 {
+		return nil, fmt.Errorf("zone query with %s returned %d zones. Expected: 1", zoneName, len(allZones))
+	}
+
+	return &allZones[0], nil
+}
+
+// ===========================================================================
+// RecordSets
+// ===========================================================================
+
+//Get Recordset by DNS Name
+func (dnsClient *OtcDnsClient) GetARecordSet(zone *zones.Zone, dnsName string) (*recordsets.RecordSet, error) {
+	listOpts := recordsets.ListOpts{
+		Type: dnsRecordTypeA,
+		Name: dnsName,
+	}
+
+	allPages, err := recordsets.ListByZone(dnsClient.Sc, zone.ID, listOpts).AllPages()
+	if err != nil {
+		return nil, fmt.Errorf("list records failed for dns entry %s: %s", dnsName, err)
+	}
+
+	allRRs, err := recordsets.ExtractRecordSets(allPages)
+	if err != nil {
+		return nil, fmt.Errorf("extract recordset failed for dns entry %s: %s", dnsName, err)
+	}
+
+	// Debug
+	//for _, rr := range allRRs {
+	//	fmt.Printf("%+v\n", rr)
+	//}
+
+	if len(allRRs) == 1 {
+		// We need exactly 1 recordset to operate on
+		return &allRRs[0], nil
+	} else if len(allRRs) == 0 {
+		// Query was successful, but no results
+		return nil, nil
+	} else {
+		// More than 1 result.
+		return nil, fmt.Errorf("query with %s returned %d recordsets. Expected: 1", dnsName, len(allRRs))
+	}
+}
+
+//
+//Create new A DNS RecordSet with DNS Name and IP
+//
+func (dnsClient *OtcDnsClient) CreateRecordSet (zone *zones.Zone, dnsName string, ipValue string) (*recordsets.RecordSet, error) {
+
+	createOpts := recordsets.CreateOpts{
+		Name:    dnsName,
+		Description: dnsRecordDescription,
+		Type:    dnsRecordTypeA,
+		Records: []string{ipValue},
+		TTL:     300,
+	}
+
+	var pCreatedRecordset *recordsets.RecordSet
+	pCreatedRecordset, err := recordsets.Create(dnsClient.Sc, zone.ID, createOpts).Extract()
     if err != nil {
         fmt.Printf("Error creating DNS record: %v\n", err)
         return
     }
-	return recordset, nil //Includes the recordSetID
+	return pCreatedRecordset, nil
 }
 
-func (dnsClient *OtcDnsClient) DeleteDNSRecord(dnsClient *golangsdk.ServiceClient, zoneID string, recordSetID string) error {
-    err := recordsets.Delete(dnsClient, zoneID, recordSetID).ExtractErr()
-    if err != nil {
-        fmt.Printf("Error deleting DNS record: %v\n", err)
-        return err
-    }
-    return nil
-}
+//
+//Delete a RecordSet by DNS Name
+//
+func (dnsClient *OtcDnsClient) DeleteRecordSet (zone *zones.Zone, dnsName string) {
+	//get DNS details
+	recordSet, err := dnsClient.GetARecordSet(zone.ID, dnsName)
 
-func (dnsClient *OtcDnsClient) UpdateDNSRecord(dnsClient *golangsdk.ServiceClient, zoneID string, recordSetID string, challengeValues []string) (*recordsets.RecordSet, error) {
-    if len(challengeValues) == 0 {
-		return nil, fmt.Errorf("update TXT records failed. The challengeValue records must have at least one entry")
+	//Call delete function
+	err := recordsets.Delete(dnsClient.Sc, zone.ID, recordSet.ID).ExtractErr()
+	if err != nil {
+		return fmt.Errorf("deletion of record with zoneId %s and recordsetId %s failed: %s", zone.ID, recordset.ID, err)
 	}
+
+	return nil
+}
+
+//
+//Updating a RecordSet IP by DNS Name
+//
+func (dnsClient *OtcDnsClient) UpdateRecordSet(zone *zones.Zone, dnsName string, newIPValue string) (*recordsets.RecordSet, error) {
+    //get DNS details
+	recordSet, err := dnsClient.GetARecordSet(zone.ID, dnsName)
+
 	updateOpts := recordsets.UpdateOpts{
-        Records: challengeValues,
+        Records: []string{newIPValue},
     }
 
-    updatedRecordSet, err := recordsets.Update(dnsClient, zoneID, recordSetID, updateOpts).Extract()
+    updatedRecordSet, err := recordsets.Update(dnsClient, zone.ID, recordSet.ID, updateOpts).Extract()
     if err != nil {
         fmt.Printf("Error updating DNS record: %v\n", err)
         return nil, err
