@@ -88,6 +88,11 @@ autoscalerConfig:
         min_usage: 0.3
         max_bytes: 32768
         max_usage: 0.7
+      replicas:
+        min_replicas: 1
+        max_replicas: 3
+        min_usage: 0.3
+        max_usage: 0.7
     cycle_time_seconds: 60
     api_token: $BBB_API_TOKEN
   prometheus_config:

@@ -18,6 +18,11 @@ bbb_config:
       min_bytes: 12288
       max_bytes: 32768
       max_usage: 0.7
+    replicas:
+      min_replicas: 2
+      max_replicas: 4
+      min_usage: 0.3
+      max_usage: 0.7
   cycle_time_seconds: 60
   api_token: $BBB_API_TOKEN
 
