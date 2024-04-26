@@ -3,7 +3,7 @@
 // Creation of a new OTC DNS record
 // Deletion of a existing OTC DNS record
 // Updating of the IP in a OTC DNS record
-package providers
+package telekom_providers
 
 import (
 	"fmt"
@@ -17,10 +17,6 @@ const (
 	dnsRecordTypeA       string = "A"
 	dnsRecordDescription string = "BBB Autoscaler"
 )
-
-type Telekom struct {
-	Config ProviderConfig `yaml:"-"`
-}
 
 // The DNS client we use to trigger our DNS actions.
 type OtcDnsClient struct {
