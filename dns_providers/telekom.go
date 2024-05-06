@@ -3,7 +3,7 @@
 // Creation of a new OTC DNS record
 // Deletion of a existing OTC DNS record
 // Updating of the IP in a OTC DNS record
-package telekom_providers
+package dns_providers
 
 import (
 	"fmt"

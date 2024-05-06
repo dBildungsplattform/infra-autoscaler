@@ -1,5 +1,5 @@
 // Config of Telekom Cloud
-package telekom_providers
+package dns_providers
 
 import (
 	"encoding/json"
