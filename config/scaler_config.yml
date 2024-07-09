@@ -6,8 +6,8 @@ provider_type: Ionos
 metrics_source_type: Prometheus
 ionos_config:
   token: $IONOS_TOKEN
-  username: $IONOS_USERNAME
-  password: $IONOS_PASSWORD
+  #username: $IONOS_USERNAME
+  #password: $IONOS_PASSWORD
   contract_id: $IONOS_CONTRACT_ID
   cluster_source:
     static:
