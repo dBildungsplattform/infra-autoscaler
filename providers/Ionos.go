@@ -38,7 +38,7 @@ func (i *Ionos) Init() error {
 	i.DbaasApi = *icDbaas.NewAPIClient(icDbaas.NewConfiguration(
 		string(i.Config.Username),
 		string(i.Config.Password),
-		string(i.Config.Token), // also valid here for Dbaas?
+		string(i.Config.Token), 
 		""))
 	if err := validateAndLoadContract(i); err != nil {
 		return fmt.Errorf("error while validating contract: %s", err)
