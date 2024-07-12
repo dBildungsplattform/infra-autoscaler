@@ -13,6 +13,7 @@ import (
 )
 
 type ProviderConfig struct {
+	Token         s.StringFromEnv  `yaml:"token"`
 	Username      s.StringFromEnv  `yaml:"username"`
 	Password      s.StringFromEnv  `yaml:"password"`
 	ContractId    s.IntFromEnv     `yaml:"contract_id"`
@@ -32,12 +33,12 @@ func (i *Ionos) Init() error {
 	i.Api = *ic.NewAPIClient(ic.NewConfiguration(
 		string(i.Config.Username),
 		string(i.Config.Password),
-		"",
+		string(i.Config.Token),
 		""))
 	i.DbaasApi = *icDbaas.NewAPIClient(icDbaas.NewConfiguration(
 		string(i.Config.Username),
 		string(i.Config.Password),
-		"",
+		string(i.Config.Token), 
 		""))
 	if err := validateAndLoadContract(i); err != nil {
 		return fmt.Errorf("error while validating contract: %s", err)
@@ -283,11 +284,21 @@ func validateServer(server ic.Server, contract ic.Contract) error {
 }
 
 func (i Ionos) Validate() error {
-	if i.Config.Username == "" {
-		return fmt.Errorf("username is empty")
-	}
-	if i.Config.Password == "" {
-		return fmt.Errorf("password is empty")
+	if (i.Config.Token == "") && ((i.Config.Username == "") || i.Config.Password == "") {
+
+		errorMessage := ""
+		if i.Config.Token == "" {
+			errorMessage += "Token "
+		}
+		if i.Config.Username == "" {
+			errorMessage += "Username "
+		}
+		if i.Config.Password == "" {
+			errorMessage += "Password "
+		}
+
+		errorMessage += "is empty"
+		return fmt.Errorf(errorMessage)
 	}
 
 	if i.Config.ServerSource == nil && i.Config.ClusterSource == nil {
