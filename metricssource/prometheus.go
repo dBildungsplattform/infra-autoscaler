@@ -49,7 +49,7 @@ func (p *Prometheus) Init() error {
 	var err error = nil
 	var rt http.RoundTripper = api.DefaultRoundTripper
 	if p.PrometheusConfig.Token != "" {
-		rt = config.NewAuthorizationCredentialsRoundTripper("Bearer", config.Secret(p.PrometheusConfig.Token), api.DefaultRoundTripper)
+		rt = config.NewAuthorizationCredentialsRoundTripper("Bearer", config.NewInlineSecret(string(p.PrometheusConfig.Token)), api.DefaultRoundTripper)
 	}
 	client, err := api.NewClient(api.Config{
 		Address:      p.PrometheusConfig.Url,
