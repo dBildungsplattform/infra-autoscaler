@@ -1,4 +1,4 @@
-FROM golang:1.20-alpine3.18 AS build_deps
+FROM golang:1.21-alpine3.18 AS build_deps
 
 WORKDIR /workspace
 
@@ -19,4 +19,8 @@ RUN apk add --no-cache ca-certificates
 
 COPY --from=build /workspace/infra-autoscaler /usr/local/bin/infra-autoscaler
 COPY config/scaler_config.yml config/scaler_config.yml
+
+RUN chown -R nobody:nogroup /usr/local/bin/infra-autoscaler config/scaler_config.yml
+USER nobody
+
 ENTRYPOINT ["infra-autoscaler"]
