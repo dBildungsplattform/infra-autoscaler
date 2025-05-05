@@ -23,6 +23,7 @@ jobs:
       image_tag_generation: "version_git_tag"
       add_latest_tag: true
       container_registry: "ghcr.io"
+      limit-severities-for-sarif: true
   publish_helm:
     uses: dBildungsplattform/dbp-github-workflows/.github/workflows/chart-release.yaml@5.0.0
     secrets: inherit
