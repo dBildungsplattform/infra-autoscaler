@@ -15,7 +15,7 @@ jobs:
       packages: write
       security-events: write
       contents: read
-    uses: dBildungsplattform/dbp-github-workflows/.github/workflows/image-publish-trivy.yaml@7
+    uses: dBildungsplattform/dbp-github-workflows/.github/workflows/image-publish-trivy.yaml@d7318717e25b71a8204a5039ff93b591b42f69a6 # 8.4.0
     with:
       image_name: "infra-autoscaler"
       run_trivy_scan: true
@@ -25,7 +25,7 @@ jobs:
       container_registry: "ghcr.io"
       limit-severities-for-sarif: true
   publish_helm:
-    uses: dBildungsplattform/dbp-github-workflows/.github/workflows/chart-release.yaml@5.0.0
+    uses: dBildungsplattform/dbp-github-workflows/.github/workflows/chart-release.yaml@d7318717e25b71a8204a5039ff93b591b42f69a6 # 8.4.0
     secrets: inherit
     with:
       chart_name: infra-autoscaler
