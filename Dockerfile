@@ -1,4 +1,4 @@
-FROM golang:1.21-alpine3.18 AS build_deps
+FROM golang:1.27-alpine3.24 AS build_deps
 
 WORKDIR /workspace
 
@@ -13,7 +13,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 go build -o infra-autoscaler -ldflags '-w -extldflags "-static"' .
 
-FROM alpine:3.18
+FROM alpine:3.24
 
 RUN apk add --no-cache ca-certificates
 
