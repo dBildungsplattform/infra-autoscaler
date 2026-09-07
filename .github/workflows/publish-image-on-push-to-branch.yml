@@ -24,4 +24,3 @@ jobs:
       add_latest_tag: false
       container_registry: "ghcr.io"
       limit-severities-for-sarif: true
-      ignore-unfixed: true
