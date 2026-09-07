@@ -15,7 +15,7 @@ jobs:
       packages: write
       security-events: write
       contents: read
-    uses: dBildungsplattform/dbp-github-workflows/.github/workflows/image-publish-trivy.yaml@61879f14e8cf35282043ca0261416a2cfbbd10e3
+    uses: dBildungsplattform/dbp-github-workflows/.github/workflows/image-publish-trivy.yaml@f45a5de96da86535b161f0bce2ce9ba88fbbfad3
     with:
       image_name: "infra-autoscaler"
       run_trivy_scan: true
