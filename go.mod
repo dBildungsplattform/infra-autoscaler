@@ -1,6 +1,6 @@
 module scaler
 
-go 1.21
+go 1.23.0
 
 require (
 	github.com/ionos-cloud/sdk-go-dbaas-postgres v1.1.2
@@ -26,7 +26,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	golang.org/x/net v0.33.0 // indirect
-	golang.org/x/oauth2 v0.24.0 // indirect
+	golang.org/x/oauth2 v0.27.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/protobuf v1.36.1 // indirect
